@@ -12,7 +12,7 @@ class InputTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         app.DATA = Path(self.temp.name)
-        app.state.update(pressed=None, presses=0, releases=0, connected=True)
+        app.state.update(pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
         app.state['events'].clear()
 
     def tearDown(self):
@@ -41,6 +41,27 @@ class InputTests(unittest.TestCase):
         app.consume('BUTTON unexpected')
         self.assertIsNone(app.state['pressed'])
         self.assertEqual(app.state['presses'], 0)
+
+    def test_strum_does_not_release_held_green(self):
+        for line in ['STATE 0', 'STATE 1', 'STATE 3', 'STATE 1']:
+            app.consume(line)
+        self.assertTrue(app.state['pressed'])
+        self.assertFalse(app.state['strum_pressed'])
+        self.assertEqual((app.state['presses'], app.state['releases']), (1, 0))
+        self.assertEqual((app.state['strum_presses'], app.state['strum_releases']), (1, 1))
+
+    def test_invalid_state_does_not_change_inputs(self):
+        app.consume('STATE 0')
+        app.consume('STATE 4')
+        app.consume('STATE -1')
+        self.assertFalse(app.state['pressed'])
+        self.assertFalse(app.state['strum_pressed'])
+
+    def test_disconnect_clears_both_indicators(self):
+        app.consume('STATE 3')
+        app.disconnect('USB removido')
+        self.assertIsNone(app.state['pressed'])
+        self.assertIsNone(app.state['strum_pressed'])
 
 if __name__ == '__main__':
     unittest.main()

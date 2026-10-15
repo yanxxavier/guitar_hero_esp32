@@ -28,7 +28,7 @@ try:
 except (OSError, ValueError):
     checks = {}
 state = dict(connected=False, status='Procurando ESP32', port=PORT, pressed=None,
-             presses=0, releases=0, firmware=None, last_event=None, started=time.time(),
+             presses=0, releases=0, strum_pressed=None, strum_presses=0, strum_releases=0, firmware=None, last_event=None, started=time.time(),
              events=deque(maxlen=120), checks=checks, error=None)
 
 
@@ -45,19 +45,22 @@ def consume(line):
         if line.startswith('GUITARHERO '):
             state['firmware'] = line
             event('firmware', line)
-        elif line in ('BUTTON 0', 'BUTTON 1'):
-            value = line == 'BUTTON 1'
-            old = state['pressed']
-            state['pressed'] = value
+        elif line in ('BUTTON 0', 'BUTTON 1', 'STATE 0', 'STATE 1', 'STATE 2', 'STATE 3'):
+            mask = int(line.split()[1])
             state['last_frame'] = time.time()
-            BRIDGE.frame(value)
-            if old != value:
-                state['last_event'] = time.time()
-            # First state after connect is a baseline, not a physical edge.
-            if old is not None and old != value:
-                state['presses' if value else 'releases'] += 1
-            if old != value:
-                event('button', 'PRESSIONADO · D15' if value else 'SOLTO · D15')
+            BRIDGE.frame(mask)
+            for bit, field, presses, releases, name in [
+                (1, 'pressed', 'presses', 'releases', 'GREEN · D15'),
+                (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA · D23')
+            ]:
+                value = bool(mask & bit)
+                old = state[field]
+                state[field] = value
+                if old is not None and old != value:
+                    state[presses if value else releases] += 1
+                if old != value:
+                    state['last_event'] = time.time()
+                    event('button', name + (' · PRESSIONADO' if value else ' · SOLTO'))
         elif line:
             event('serial', line[:400])
 
@@ -65,7 +68,7 @@ def consume(line):
 def disconnect(message):
     with LOCK:
         BRIDGE.release()
-        state.update(connected=False, pressed=None, error=message, status='Aguardando conexão')
+        state.update(connected=False, pressed=None, strum_pressed=None, error=message, status='Aguardando conexão')
 
 
 def reader():
@@ -73,7 +76,7 @@ def reader():
         try:
             with serial.Serial(state['port'], 115200, timeout=.1, exclusive=True) as device:
                 with LOCK:
-                    state.update(connected=True, pressed=None, firmware=None, error=None, status='Serial conectada')
+                    state.update(connected=True, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
                 event('connection', 'ESP32 conectado · 115200 baud')
                 # Reset with button released; obtains identification and current state.
                 device.dtr = False
@@ -136,7 +139,7 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size) or '{}')
             with LOCK:
                 if self.path == '/api/reset':
-                    state.update(presses=0, releases=0, started=time.time())
+                    state.update(presses=0, releases=0, strum_presses=0, strum_releases=0, started=time.time())
                     event('session', 'Nova contagem iniciada')
                 elif self.path == '/api/check':
                     key = payload['key']
@@ -158,7 +161,7 @@ def bridge_worker():
             was_ready = BRIDGE.device is not None
             BRIDGE.tick()
             if not was_ready and BRIDGE.device is not None:
-                event('bridge', 'Controle virtual criado · BTN_SOUTH')
+                event('bridge', 'Controle virtual criado · Green BTN_SOUTH / Palhetada BTN_EAST')
 
 
 def stop(*_):

@@ -1,41 +1,47 @@
-// ESP32-WROOM-32: botão normalmente aberto entre D15 (GPIO15) e GND.
-// Mantenha o botão solto ao ligar ou reiniciar a placa.
-constexpr uint8_t BUTTON_PIN = 15;
+// ESP32-WROOM-32: chaves NO entre D15/GND (Green) e D23/GND (Strum Down).
+// Mantenha Green solto ao ligar/reiniciar: GPIO15 é pino de configuração de boot.
+constexpr uint8_t PINS[] = {15, 23};
 constexpr uint32_t DEBOUNCE_MS = 5;
-bool candidate;
-bool stable;
-uint32_t changedAt;
+bool candidate[2];
+bool stable[2];
+uint32_t changedAt[2];
 uint32_t lastReport;
 
-void report(bool level) {
-  Serial.println(level == LOW ? "BUTTON 1" : "BUTTON 0");
+void report() {
+  // Quadro completo: bit 0 = Green, bit 1 = palhetada. 1 significa pressionado.
+  const uint8_t mask = (stable[0] == LOW ? 1 : 0) | (stable[1] == LOW ? 2 : 0);
+  Serial.print("STATE ");
+  Serial.println(mask);
 }
 
 void setup() {
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  for (uint8_t i = 0; i < 2; ++i) {
+    pinMode(PINS[i], INPUT_PULLUP);
+    candidate[i] = stable[i] = digitalRead(PINS[i]);
+    changedAt[i] = millis();
+  }
   Serial.begin(115200);
-  candidate = stable = digitalRead(BUTTON_PIN);
-  changedAt = millis();
-  Serial.println("GUITARHERO BUTTON-TEST v2 GPIO15");
-  report(stable);
+  Serial.println("GUITARHERO TWO-BUTTON v3 GPIO15 GPIO23");
+  report();
   lastReport = millis();
 }
 
 void loop() {
   const uint32_t now = millis();
-  const bool level = digitalRead(BUTTON_PIN);
-  if (level != candidate) {
-    candidate = level;
-    changedAt = now;
+  bool changed = false;
+  for (uint8_t i = 0; i < 2; ++i) {
+    const bool level = digitalRead(PINS[i]);
+    if (level != candidate[i]) {
+      candidate[i] = level;
+      changedAt[i] = now;
+    }
+    if (candidate[i] != stable[i] && uint32_t(now - changedAt[i]) >= DEBOUNCE_MS) {
+      stable[i] = candidate[i];
+      changed = true;
+    }
   }
-  if (candidate != stable && uint32_t(now - changedAt) >= DEBOUNCE_MS) {
-    stable = candidate;
-    report(stable);
-    lastReport = now;
-  }
-  // Heartbeat: lets the host release virtual input if the firmware stops.
-  if (uint32_t(now - lastReport) >= 250) {
-    report(stable);
+  if (changed || uint32_t(now - lastReport) >= 250) {
+    report();
     lastReport = now;
   }
   delay(1);

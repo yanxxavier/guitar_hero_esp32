@@ -4,12 +4,16 @@ import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / 'dashboard'))
 from bridge import Bridge
+from evdev import ecodes as e
 
 class Device:
     def __init__(self):
         self.frames = []
+        self.codes = []
         self.closed = False
-    def write(self, kind, code, value): self.frames.append(value)
+    def write(self, kind, code, value):
+        self.frames.append(value)
+        self.codes.append((code, value))
     def syn(self): pass
     def close(self): self.closed = True
 
@@ -46,7 +50,7 @@ class BridgeTests(unittest.TestCase):
     def test_close_releases_and_destroys_device(self):
         self.bridge.frame(True)
         self.bridge.close()
-        self.assertEqual(self.device.frames, [1, 0])
+        self.assertEqual(self.device.frames, [1, 0, 0])
         self.assertTrue(self.device.closed)
         self.assertIsNone(self.bridge.device)
     def test_permissions_failure_does_not_crash_or_claim_ready(self):
@@ -56,5 +60,17 @@ class BridgeTests(unittest.TestCase):
         bridge.frame(True)
         self.assertFalse(bridge.snapshot()['ready'])
         self.assertEqual(bridge.sent, 0)
+
+    def test_strum_transitions_preserve_green(self):
+        for mask in [1, 3, 1, 3, 1]: self.bridge.frame(mask)
+        self.assertEqual(self.device.codes, [(e.BTN_SOUTH, 1), (e.BTN_EAST, 1), (e.BTN_EAST, 0), (e.BTN_EAST, 1), (e.BTN_EAST, 0)])
+        self.assertEqual(self.bridge.mask, 1)
+
+    def test_timeout_releases_both_buttons(self):
+        self.bridge.frame(3)
+        self.now = 2
+        self.bridge.tick()
+        self.assertEqual(self.bridge.mask, 0)
+        self.assertEqual(self.device.codes[-2:], [(e.BTN_SOUTH, 0), (e.BTN_EAST, 0)])
 
 if __name__ == '__main__': unittest.main()
