@@ -8,3 +8,5 @@ __pycache__/
 .env
 .env.*
 !.env.example
+# Imagens históricas da bancada (D16), mantidas somente no computador.
+/docs/*.png
