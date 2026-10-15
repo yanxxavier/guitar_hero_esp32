@@ -12,7 +12,7 @@ class InputTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         app.DATA = Path(self.temp.name)
-        app.state.update(pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
+        app.state.update(whammy_raw=None, whammy_min=None, whammy_max=None, pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
         app.state['events'].clear()
 
     def tearDown(self):
@@ -62,6 +62,23 @@ class InputTests(unittest.TestCase):
         app.disconnect('USB removido')
         self.assertIsNone(app.state['pressed'])
         self.assertIsNone(app.state['strum_pressed'])
+
+    def test_full_frames_track_analog_range_without_button_counts(self):
+        for line in ['STATE 1 0', 'STATE 1 2048', 'STATE 1 4095']:
+            app.consume(line)
+        self.assertEqual((app.state['whammy_raw'], app.state['whammy_min'], app.state['whammy_max']), (4095, 0, 4095))
+        self.assertTrue(app.state['pressed'])
+        self.assertEqual(app.state['presses'], 0)
+        app.disconnect('removed')
+        self.assertIsNone(app.state['whammy_raw'])
+
+    def test_invalid_analog_rejects_entire_frame(self):
+        app.consume('STATE 0 1000')
+        for line in ['STATE 3 4096', 'STATE 3 -1', 'STATE 3 abc', 'STATE 3 20 extra']:
+            app.consume(line)
+        self.assertEqual(app.state['whammy_raw'], 1000)
+        self.assertFalse(app.state['pressed'])
+        self.assertFalse(app.state['strum_pressed'])
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,7 +4,7 @@ const stages=[['serial','USB e serial no Zorin','Placa identificada e comunicaç
 for(const [key,title,desc] of stages){const label=document.createElement('label');label.className='check';const input=document.createElement('input');input.type='checkbox';input.id='check-'+key;input.onchange=async()=>{try{await post('/api/check',{key,value:input.checked});toast('Etapa salva neste computador.')}catch(e){input.checked=!input.checked;toast('Não foi possível salvar.')}};const text=document.createElement('span'),strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=title;small.textContent=desc;text.append(strong,small);label.append(input,text);$('checks').append(label)}
 async function post(url,data={}){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Falha ao salvar');return r.json()}
 function toast(text){$('notice').textContent=text;$('notice').style.display='block';setTimeout(()=>$('notice').style.display='none',3000)}
-function offline(text){$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
+function offline(text){$('whammy-value').textContent='Sem conexão';$('whammy-bar').value=0;$('whammy-range').textContent='Sem leitura atual';$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
 function renderBridge(b){
 if(!b)return;
 $('bridge-pill').textContent=b.ready?'● Controle criado':'○ Acesso pendente';
@@ -12,10 +12,14 @@ $('bridge-pill').className='pill'+(b.ready?'':' off');
 $('virtual-state').textContent=b.ready?('Green '+(b.pressed?'●':'○')+' / Palheta '+(b.strum_pressed?'●':'○')):'Indisponível';
 $('virtual-sent').textContent=b.sent;
 $('virtual-path').textContent=b.event_path?b.event_path+' · BTN_SOUTH / BTN_EAST':'Guitar Lab Virtual Controller · 2 botões';
-$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'D15 → BTN_SOUTH (Green). D13 → BTN_EAST (palhetada). Mapeie Strum Down no Clone Hero.':'Aguardando acesso ao /dev/uinput.';
+$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'D15 → BTN_SOUTH (Green). D13 → BTN_EAST (palhetada). Whammy D34 → ABS_Z (mapeamento pendente).':'Aguardando acesso ao /dev/uinput.';
 try{const pads=Array.from(navigator.getGamepads?.()||[]);const pad=pads.find(p=>p&&p.id.includes('Guitar Lab'));$('gamepad-state').textContent=pad?('Green '+(pad.buttons[0]?.pressed?'●':'○')+' / Palheta '+(pad.buttons[1]?.pressed?'●':'○')):'Não detectado';$('gamepad-hint').textContent=pad?pad.id:'Aperte o botão físico com esta página em foco; alguns navegadores não expõem o controle.';}catch(e){$('gamepad-state').textContent='Indisponível';$('gamepad-hint').textContent='Gamepad API não disponível neste navegador.'}
 }
 function render(s){last=s;renderBridge(s.bridge);
+const analogKnown=s.connected&&!s.bridge?.timed_out&&Number.isInteger(s.whammy_raw);
+$('whammy-value').textContent=analogKnown?Math.round(s.whammy_raw/4095*100)+'% · '+s.whammy_raw+' / 4095':'Aguardando leitura';
+$('whammy-bar').value=analogKnown?s.whammy_raw:0;
+$('whammy-range').textContent=analogKnown?'Menor observado: '+s.whammy_min+' · Maior observado: '+s.whammy_max+' · D34 → ABS_Z':'Sem dados analógicos atuais.';
 const strumKnown=s.connected&&s.strum_pressed!==null&&s.strum_pressed!==undefined;
 $('strum-light').className='hardware-button'+(strumKnown?(s.strum_pressed?' pressed':' ready'):'');
 $('strum-status').textContent=strumKnown?(s.strum_pressed?'Pressionado':'Solto'):'Aguardando';

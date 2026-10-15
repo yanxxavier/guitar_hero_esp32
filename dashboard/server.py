@@ -4,6 +4,7 @@ import atexit
 import signal
 import sys
 import json
+import re
 import threading
 import time
 from collections import deque
@@ -27,7 +28,7 @@ try:
     checks = json.loads(CHECKS.read_text())
 except (OSError, ValueError):
     checks = {}
-state = dict(connected=False, status='Procurando ESP32', port=PORT, pressed=None,
+state = dict(whammy_raw=None, whammy_min=None, whammy_max=None, connected=False, status='Procurando ESP32', port=PORT, pressed=None,
              presses=0, releases=0, strum_pressed=None, strum_presses=0, strum_releases=0, firmware=None, last_event=None, started=time.time(),
              events=deque(maxlen=120), checks=checks, error=None)
 
@@ -45,10 +46,19 @@ def consume(line):
         if line.startswith('GUITARHERO '):
             state['firmware'] = line
             event('firmware', line)
-        elif line in ('BUTTON 0', 'BUTTON 1', 'STATE 0', 'STATE 1', 'STATE 2', 'STATE 3'):
-            mask = int(line.split()[1])
+        elif re.fullmatch(r'(?:BUTTON [01]|STATE [0-3](?: [0-9]{1,4})?)', line):
+            parts = line.split()
+            mask = int(parts[1])
+            raw = int(parts[2]) if len(parts) == 3 else None
+            if raw is not None and raw > 4095:
+                event('serial', 'Quadro analógico inválido: ' + line)
+                return
+            state['whammy_raw'] = raw
+            if raw is not None:
+                state['whammy_min'] = raw if state['whammy_min'] is None else min(raw, state['whammy_min'])
+                state['whammy_max'] = raw if state['whammy_max'] is None else max(raw, state['whammy_max'])
             state['last_frame'] = time.time()
-            BRIDGE.frame(mask)
+            BRIDGE.frame(mask, raw if raw is not None else 0)
             for bit, field, presses, releases, name in [
                 (1, 'pressed', 'presses', 'releases', 'GREEN · D15'),
                 (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA · D13')
@@ -68,7 +78,7 @@ def consume(line):
 def disconnect(message):
     with LOCK:
         BRIDGE.release()
-        state.update(connected=False, pressed=None, strum_pressed=None, error=message, status='Aguardando conexão')
+        state.update(connected=False, whammy_raw=None, pressed=None, strum_pressed=None, error=message, status='Aguardando conexão')
 
 
 def reader():
@@ -76,7 +86,7 @@ def reader():
         try:
             with serial.Serial(state['port'], 115200, timeout=.1, exclusive=True) as device:
                 with LOCK:
-                    state.update(connected=True, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
+                    state.update(connected=True, whammy_raw=None, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
                 event('connection', 'ESP32 conectado · 115200 baud')
                 # Reset with button released; obtains identification and current state.
                 device.dtr = False
@@ -139,7 +149,7 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size) or '{}')
             with LOCK:
                 if self.path == '/api/reset':
-                    state.update(presses=0, releases=0, strum_presses=0, strum_releases=0, started=time.time())
+                    state.update(whammy_min=state["whammy_raw"], whammy_max=state["whammy_raw"], presses=0, releases=0, strum_presses=0, strum_releases=0, started=time.time())
                     event('session', 'Nova contagem iniciada')
                 elif self.path == '/api/check':
                     key = payload['key']

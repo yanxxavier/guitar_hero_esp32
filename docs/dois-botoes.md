@@ -1,4 +1,6 @@
-# Green + palhetada — firmware v4
+# Green + palhetada — histórico v4
+
+Atual: firmware **v5** mantém os dois botões e adiciona [whammy D34](whammy.md). Green e palhetada D13 foram confirmados no jogo pelo usuário em 15/10; trechos pendentes abaixo registram o estado anterior.
 
 ## Ligações
 

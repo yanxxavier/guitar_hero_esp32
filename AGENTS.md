@@ -9,4 +9,4 @@ Este projeto constrói uma guitarra por cabo com ESP32, ponte Linux e dashboard 
 - Nunca publique backups de flash, logs de execução, credenciais ou dependências locais.
 - Registre mudanças no GitHub `yanxxavier/guitar_hero_esp32` após verificações. Não force atualizações sobre trabalho remoto.
 - Não execute o servidor web como root. O script de permissões exige sudo somente para configurar udev.
-- Firmware v4 implementa D15 (Green) e D13 (palhetada). Green já foi validado no jogo; D13 ainda depende de teste físico e mapeamento. Não apresentar outros controles como validados.
+- Firmware v5 implementa D15 (Green), D13 (palhetada) e B10K no D34 (whammy; extremos 3V3/GND). Green e palhetada validados no jogo por relato; whammy implementado, curso/calibração e mapeamento no jogo pendentes. Protocolo STATE N A, saída ABS_Z 0–4095. Não apresentar outros controles como validados.

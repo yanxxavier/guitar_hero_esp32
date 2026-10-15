@@ -73,4 +73,27 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(self.bridge.mask, 0)
         self.assertEqual(self.device.codes[-2:], [(e.BTN_SOUTH, 0), (e.BTN_EAST, 0)])
 
+    def test_analog_changes_preserve_held_buttons_and_ignore_duplicates(self):
+        self.bridge.frame(3, 1000)
+        self.bridge.frame(3, 1000)
+        self.bridge.frame(3, 4095)
+        self.assertEqual(self.device.codes, [(e.BTN_SOUTH, 1), (e.BTN_EAST, 1), (e.ABS_Z, 1000), (e.ABS_Z, 4095)])
+        self.assertEqual(self.bridge.mask, 3)
+
+    def test_analog_timeout_and_close_return_to_zero(self):
+        self.bridge.frame(0, 2048)
+        self.now = 2
+        self.bridge.tick()
+        self.assertEqual(self.device.codes[-1], (e.ABS_Z, 0))
+        self.assertEqual(self.bridge.whammy, 0)
+        self.bridge.frame(0, 4095)
+        self.bridge.close()
+        self.assertEqual(self.device.codes[-1], (e.ABS_Z, 0))
+
+    def test_invalid_analog_never_updates_heartbeat_or_output(self):
+        for value in [-1, 4096, 1.5, True]:
+            with self.assertRaises(ValueError): self.bridge.frame(3, value)
+        self.assertIsNone(self.bridge.last_frame)
+        self.assertEqual(self.device.codes, [])
+
 if __name__ == '__main__': unittest.main()

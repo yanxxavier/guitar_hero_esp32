@@ -2,14 +2,15 @@
 
 Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/GuitarHero`.
 
-## Configuração atual — firmware v4, duas entradas
+## Configuração atual — firmware v5, dois botões + whammy
 
 - **Green:** chave NO entre D15 e GND → BTN_SOUTH (Button 0 no jogo, já validado).
-- **Palhetada:** segunda chave NO entre D13 e GND → BTN_EAST; mapear em **Strum Down** na coluna Controller do Clone Hero.
+- **Palhetada:** segunda chave NO entre D13 e GND → BTN_EAST; validada no Clone Hero por relato do usuário.
+- **Whammy:** potenciômetro B10K de três terminais: extremos em 3V3/GND, cursor em D34/GPIO34 → ABS_Z (0–4095). Suporte implementado; curso, repouso e mapeamento no jogo ainda dependem de validação física. Ver [protocolo e teste do whammy](docs/whammy.md).
 - Ambas usam INPUT_PULLUP. Cada botão de quatro pernas deve usar um par que só tem continuidade quando apertado. Não usar 3V3/5V nos botões.
 - [Protocolo e teste de duas entradas](docs/dois-botoes.md).
 - Dashboard mostra os dois estados e contagem separada para palhetada. A contagem superior se refere a Green.
-- Os registros v1/v2 abaixo são históricos. Firmware/ponte atuais são v4 e usam STATE 0–3; a ponte ainda aceita BUTTON 0/1 do teste antigo.
+- Os registros v1/v2 abaixo são históricos. Firmware atual v5 usa STATE N A (N: botões 0–3; A: ADC 0–4095); a ponte também aceita STATE N e BUTTON 0/1 antigos, com eixo zerado.
 
 
 ## Bancada em 14/10/2026

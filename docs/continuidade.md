@@ -1,3 +1,9 @@
+# Estado atual — 15/10/2026
+
+Firmware v5: Green D15/GND e palhetada D13/GND, ambos validados no jogo por relato. B10K com extremos 3V3/GND e cursor D34 confirmado pelo usuário; leitura ADC e eixo ABS_Z implementados, teste de movimento/calibração/mapeamento ainda pendente. Ver [whammy](whammy.md). Completar bancada Zorin; Ally antes da construção impressa.
+
+Registros abaixo são históricos.
+
 # Estado de bancada — 14/10/2026
 
 ## Validado
