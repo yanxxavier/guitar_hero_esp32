@@ -2,14 +2,14 @@
 
 Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/GuitarHero`.
 
-## Configuração atual — firmware v3, duas entradas
+## Configuração atual — firmware v4, duas entradas
 
 - **Green:** chave NO entre D15 e GND → BTN_SOUTH (Button 0 no jogo, já validado).
-- **Palhetada:** segunda chave NO entre D23 e GND → BTN_EAST; mapear em **Strum Down** na coluna Controller do Clone Hero.
+- **Palhetada:** segunda chave NO entre D13 e GND → BTN_EAST; mapear em **Strum Down** na coluna Controller do Clone Hero.
 - Ambas usam INPUT_PULLUP. Cada botão de quatro pernas deve usar um par que só tem continuidade quando apertado. Não usar 3V3/5V nos botões.
 - [Protocolo e teste de duas entradas](docs/dois-botoes.md).
 - Dashboard mostra os dois estados e contagem separada para palhetada. A contagem superior se refere a Green.
-- Os registros v1/v2 abaixo são históricos. Firmware/ponte atuais são v3 e usam STATE 0–3; a ponte ainda aceita BUTTON 0/1 do teste antigo.
+- Os registros v1/v2 abaixo são históricos. Firmware/ponte atuais são v4 e usam STATE 0–3; a ponte ainda aceita BUTTON 0/1 do teste antigo.
 
 
 ## Bancada em 14/10/2026

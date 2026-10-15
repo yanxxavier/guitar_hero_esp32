@@ -1,6 +1,6 @@
-// ESP32-WROOM-32: chaves NO entre D15/GND (Green) e D23/GND (Strum Down).
+// ESP32-WROOM-32: chaves NO entre D15/GND (Green) e D13/GND (Strum Down).
 // Mantenha Green solto ao ligar/reiniciar: GPIO15 é pino de configuração de boot.
-constexpr uint8_t PINS[] = {15, 23};
+constexpr uint8_t PINS[] = {15, 13};
 constexpr uint32_t DEBOUNCE_MS = 5;
 bool candidate[2];
 bool stable[2];
@@ -21,7 +21,7 @@ void setup() {
     changedAt[i] = millis();
   }
   Serial.begin(115200);
-  Serial.println("GUITARHERO TWO-BUTTON v3 GPIO15 GPIO23");
+  Serial.println("GUITARHERO TWO-BUTTON v4 GPIO15 GPIO13");
   report();
   lastReport = millis();
 }

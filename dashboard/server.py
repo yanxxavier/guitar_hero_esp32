@@ -51,7 +51,7 @@ def consume(line):
             BRIDGE.frame(mask)
             for bit, field, presses, releases, name in [
                 (1, 'pressed', 'presses', 'releases', 'GREEN · D15'),
-                (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA · D23')
+                (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA · D13')
             ]:
                 value = bool(mask & bit)
                 old = state[field]
