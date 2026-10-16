@@ -2,16 +2,16 @@
 
 Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/GuitarHero`.
 
-## Configuração atual — firmware v5, dois botões + whammy
+## Configuração atual — firmware v7, cinco cores
 
-- **Green:** chave NO entre D15 e GND → BTN_SOUTH (Button 0 no jogo, já validado).
-- **Palhetada:** segunda chave NO entre D13 e GND → BTN_EAST; validada no Clone Hero por relato do usuário.
-- **Whammy:** potenciômetro B10K de três terminais: extremos em 3V3/GND, cursor em D34/GPIO34 → ABS_Z (0–4095). Suporte implementado; curso, repouso e mapeamento no jogo ainda dependem de validação física. Ver [protocolo e teste do whammy](docs/whammy.md).
-- Ambas usam INPUT_PULLUP. Cada botão de quatro pernas deve usar um par que só tem continuidade quando apertado. Não usar 3V3/5V nos botões.
-- [Protocolo e teste de duas entradas](docs/dois-botoes.md).
-- Dashboard mostra os dois estados e contagem separada para palhetada. A contagem superior se refere a Green.
-- Os registros v1/v2 abaixo são históricos. Firmware atual v5 usa STATE N A (N: botões 0–3; A: ADC 0–4095); a ponte também aceita STATE N e BUTTON 0/1 antigos, com eixo zerado.
+- Montagem atual: switches no braço, na ordem verde a laranja, em **D15/D18/D19/D21/D13**, todos para GND comum com INPUT_PULLUP.
+- **Palhetada, Start e Select não instalados nesta montagem.** Validação anterior de palhetada D13 é histórica.
+- B10K/D34 continua suportado; estado da conexão física do whammy nesta montagem ainda não reconfirmado.
+- Dashboard mostra cinco indicadores e contadores individuais; combinações de cores preservadas na ponte Linux.
+- [Mapa, protocolo e teste das cinco cores](docs/cinco-cores.md). Green mantém BTN_SOUTH; quatro novas cores usam BTN_NORTH/WEST/TL/TR. Palhetada BTN_EAST reservado para compatibilidade.
+- Relatos anteriores validaram Green/palhetada na bancada anterior, whammy no painel e captura Axis 2; ainda é preciso testar os cinco switches definitivos na montagem atual.
 
+Demais seções abaixo registram etapas anteriores.
 
 ## Bancada em 14/10/2026
 

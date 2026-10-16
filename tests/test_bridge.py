@@ -50,7 +50,7 @@ class BridgeTests(unittest.TestCase):
     def test_close_releases_and_destroys_device(self):
         self.bridge.frame(True)
         self.bridge.close()
-        self.assertEqual(self.device.frames, [1, 0, 0])
+        self.assertEqual(self.device.frames, [1, 0, 0, 0, 0, 0, 0])
         self.assertTrue(self.device.closed)
         self.assertIsNone(self.bridge.device)
     def test_permissions_failure_does_not_crash_or_claim_ready(self):
@@ -95,5 +95,16 @@ class BridgeTests(unittest.TestCase):
             with self.assertRaises(ValueError): self.bridge.frame(3, value)
         self.assertIsNone(self.bridge.last_frame)
         self.assertEqual(self.device.codes, [])
+
+    def test_five_frets_chord_and_partial_release(self):
+        self.bridge.frame(61, 2000)
+        self.bridge.frame(60, 2000)
+        self.assertEqual(self.bridge.mask, 60)
+        self.assertEqual(self.device.codes[-1], (e.BTN_SOUTH, 0))
+        self.now = 2
+        self.bridge.tick()
+        self.assertEqual(self.bridge.mask, 0)
+        self.assertEqual(self.bridge.whammy, 0)
+        self.assertIn((e.BTN_TR, 0), self.device.codes)
 
 if __name__ == '__main__': unittest.main()

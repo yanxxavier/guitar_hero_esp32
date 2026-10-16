@@ -3,12 +3,13 @@ import time
 from evdev import UInput, AbsInfo, ecodes as e
 
 NAME = 'Guitar Lab Virtual Controller'
-BUTTONS = ((1, e.BTN_SOUTH), (2, e.BTN_EAST))
+BUTTONS = ((1, e.BTN_SOUTH), (2, e.BTN_EAST), (4, e.BTN_NORTH),
+           (8, e.BTN_WEST), (16, e.BTN_TL), (32, e.BTN_TR))
 
 
 def make_device():
     # Generic gamepad capabilities help SDL identify the device as a controller.
-    # D15 sends BTN_SOUTH; D13 sends BTN_EAST. Other inputs stay neutral.
+    # D15/18/19/21/13 send five frets; BTN_EAST reserved for historical strum.
     caps = {e.EV_KEY: [e.BTN_SOUTH, e.BTN_EAST, e.BTN_NORTH, e.BTN_WEST,
                        e.BTN_TL, e.BTN_TR, e.BTN_SELECT, e.BTN_START, e.BTN_MODE],
             e.EV_ABS: [(e.ABS_X, AbsInfo(0, -32768, 32767, 0, 128, 0)),
@@ -68,7 +69,7 @@ class Bridge:
             self.next_retry = self.clock() + 2
 
     def frame(self, mask, whammy=0):
-        if not isinstance(mask, int) or not 0 <= mask <= 3:
+        if not isinstance(mask, int) or not 0 <= mask <= 63:
             raise ValueError('Invalid input mask')
         if type(whammy) is not int or not 0 <= whammy <= 4095:
             raise ValueError("Invalid whammy value")
@@ -78,7 +79,7 @@ class Bridge:
 
     def tick(self):
         self.ensure()
-        # Firmware v5 emits a state every 250ms, including while held.
+        # Firmware v7 emits a state every 250ms, including while held.
         if self.last_frame is not None and self.clock() - self.last_frame > 1.5:
             self.send(0)
             self.timed_out = True
@@ -109,4 +110,4 @@ class Bridge:
         return dict(ready=self.device is not None, name=NAME, button='BTN_SOUTH',
                     pressed=self.pressed, strum_pressed=bool(self.mask & 2), mask=self.mask, sent=self.sent, error=self.error,
                     timed_out=self.timed_out, event_path=getattr(device, 'path', None),
-                    firmware_required='WHAMMY v5', whammy=self.whammy, axis='ABS_Z')
+                    firmware_required='FRETS v7', whammy=self.whammy, axis='ABS_Z')

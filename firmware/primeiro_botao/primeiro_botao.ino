@@ -1,18 +1,22 @@
-// ESP32-WROOM-32: chaves NO entre D15/GND (Green) e D13/GND (Strum Down).
+// ESP32-WROOM-32: cinco switches NO para GND, na ordem verde a laranja.
 // Mantenha Green solto ao ligar/reiniciar: GPIO15 é pino de configuração de boot.
-constexpr uint8_t PINS[] = {15, 13};
+constexpr uint8_t PINS[] = {15, 18, 19, 21, 13};
+constexpr uint8_t BITS[] = {1, 4, 8, 16, 32};
+constexpr uint8_t INPUT_COUNT = sizeof(PINS) / sizeof(PINS[0]);
 constexpr uint32_t DEBOUNCE_MS = 5;
 constexpr uint8_t WHAMMY_PIN = 34;
 uint16_t whammy, reportedWhammy;
 uint32_t lastSample;
-bool candidate[2];
-bool stable[2];
-uint32_t changedAt[2];
+bool candidate[INPUT_COUNT];
+bool stable[INPUT_COUNT];
+uint32_t changedAt[INPUT_COUNT];
 uint32_t lastReport;
 
 void report() {
-  // Quadro completo: bit 0 = Green, bit 1 = palhetada. 1 significa pressionado.
-  const uint8_t mask = (stable[0] == LOW ? 1 : 0) | (stable[1] == LOW ? 2 : 0);
+  // Bits 0,2,3,4,5 = frets. Bit 1 reservado à palhetada histórica, ausente nesta bancada.
+  uint8_t mask = 0;
+  for (uint8_t i = 0; i < INPUT_COUNT; ++i)
+    if (stable[i] == LOW) mask |= BITS[i];
   Serial.print("STATE ");
   Serial.print(mask);
   Serial.print(" ");
@@ -21,7 +25,7 @@ void report() {
 }
 
 void setup() {
-  for (uint8_t i = 0; i < 2; ++i) {
+  for (uint8_t i = 0; i < INPUT_COUNT; ++i) {
     pinMode(PINS[i], INPUT_PULLUP);
     candidate[i] = stable[i] = digitalRead(PINS[i]);
     changedAt[i] = millis();
@@ -31,7 +35,7 @@ void setup() {
   whammy = analogRead(WHAMMY_PIN);
   lastSample = millis();
   Serial.begin(115200);
-  Serial.println("GUITARHERO WHAMMY v5 GPIO15 GPIO13 GPIO34");
+  Serial.println("GUITARHERO FRETS v7 GPIO15 GPIO18 GPIO19 GPIO21 GPIO13 ADC34");
   report();
   lastReport = millis();
 }
@@ -39,7 +43,7 @@ void setup() {
 void loop() {
   const uint32_t now = millis();
   bool changed = false;
-  for (uint8_t i = 0; i < 2; ++i) {
+  for (uint8_t i = 0; i < INPUT_COUNT; ++i) {
     const bool level = digitalRead(PINS[i]);
     if (level != candidate[i]) {
       candidate[i] = level;

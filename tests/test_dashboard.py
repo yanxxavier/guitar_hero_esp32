@@ -12,7 +12,7 @@ class InputTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         app.DATA = Path(self.temp.name)
-        app.state.update(whammy_raw=None, whammy_min=None, whammy_max=None, pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
+        app.state.update(frets=app.new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
         app.state['events'].clear()
 
     def tearDown(self):
@@ -52,7 +52,7 @@ class InputTests(unittest.TestCase):
 
     def test_invalid_state_does_not_change_inputs(self):
         app.consume('STATE 0')
-        app.consume('STATE 4')
+        app.consume('STATE 64')
         app.consume('STATE -1')
         self.assertFalse(app.state['pressed'])
         self.assertFalse(app.state['strum_pressed'])
@@ -79,6 +79,21 @@ class InputTests(unittest.TestCase):
         self.assertEqual(app.state['whammy_raw'], 1000)
         self.assertFalse(app.state['pressed'])
         self.assertFalse(app.state['strum_pressed'])
+
+    def test_each_fret_and_chords_keep_independent_counts(self):
+        app.consume('STATE 0 1000')
+        for bit in [1, 4, 8, 16, 32]:
+            app.consume(f'STATE {bit} 1000')
+            app.consume('STATE 0 1000')
+        app.consume('STATE 61 2000')
+        app.consume('STATE 60 2000')
+        self.assertFalse(app.state['frets']['green']['pressed'])
+        for key in ['red', 'yellow', 'blue', 'orange']:
+            self.assertTrue(app.state['frets'][key]['pressed'])
+        app.disconnect('removed')
+        self.assertTrue(all(f['pressed'] is None for f in app.state['frets'].values()))
+        app.consume('STATE 0 1000')
+        self.assertEqual(app.state['frets']['orange']['releases'], 1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -10,3 +10,6 @@ Este projeto constrói uma guitarra por cabo com ESP32, ponte Linux e dashboard 
 - Registre mudanças no GitHub `yanxxavier/guitar_hero_esp32` após verificações. Não force atualizações sobre trabalho remoto.
 - Não execute o servidor web como root. O script de permissões exige sudo somente para configurar udev.
 - Firmware v5 implementa D15 (Green), D13 (palhetada) e B10K no D34 (whammy; extremos 3V3/GND). Green e palhetada validados no jogo por relato; whammy implementado, curso/calibração e mapeamento no jogo pendentes. Protocolo STATE N A, saída ABS_Z 0–4095. Não apresentar outros controles como validados.
+
+- Atualização 16/10/2026: montagem atual tem somente cinco cores no braço, D15/D18/D19/D21/D13 para GND; palhetada, Start e Select não instalados. Firmware v7 lê cinco frets, mantendo protocolo STATE N A e whammy D34. Testes físicos dos cinco switches definitivos pendentes. Relatos anteriores D13 são da bancada anterior. Ver docs/cinco-cores.md.
+- Correção 16/10: D22 não disponível; laranja usa D13. Não configurar palhetada no D13 enquanto laranja estiver ali. Escolher outro GPIO para palhetada futura.

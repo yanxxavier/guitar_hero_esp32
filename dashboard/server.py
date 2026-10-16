@@ -28,7 +28,14 @@ try:
     checks = json.loads(CHECKS.read_text())
 except (OSError, ValueError):
     checks = {}
-state = dict(whammy_raw=None, whammy_min=None, whammy_max=None, connected=False, status='Procurando ESP32', port=PORT, pressed=None,
+FRETS = [('green', 'Verde', 15, 1), ('red', 'Vermelho', 18, 4),
+         ('yellow', 'Amarelo', 19, 8), ('blue', 'Azul', 21, 16), ('orange', 'Laranja', 13, 32)]
+
+def new_frets():
+    return {key: dict(name=name, pin=pin, pressed=None, presses=0, releases=0)
+            for key, name, pin, bit in FRETS}
+
+state = dict(frets=new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, connected=False, status='Procurando ESP32', port=PORT, pressed=None,
              presses=0, releases=0, strum_pressed=None, strum_presses=0, strum_releases=0, firmware=None, last_event=None, started=time.time(),
              events=deque(maxlen=120), checks=checks, error=None)
 
@@ -46,11 +53,11 @@ def consume(line):
         if line.startswith('GUITARHERO '):
             state['firmware'] = line
             event('firmware', line)
-        elif re.fullmatch(r'(?:BUTTON [01]|STATE [0-3](?: [0-9]{1,4})?)', line):
+        elif re.fullmatch(r'(?:BUTTON [01]|STATE [0-9]{1,2}(?: [0-9]{1,4})?)', line):
             parts = line.split()
             mask = int(parts[1])
             raw = int(parts[2]) if len(parts) == 3 else None
-            if raw is not None and raw > 4095:
+            if mask > 63 or (raw is not None and raw > 4095):
                 event('serial', 'Quadro analógico inválido: ' + line)
                 return
             state['whammy_raw'] = raw
@@ -59,10 +66,21 @@ def consume(line):
                 state['whammy_max'] = raw if state['whammy_max'] is None else max(raw, state['whammy_max'])
             state['last_frame'] = time.time()
             BRIDGE.frame(mask, raw if raw is not None else 0)
+            for key, name, pin, bit in FRETS:
+                fret = state['frets'][key]
+                value, old = bool(mask & bit), fret['pressed']
+                fret['pressed'] = value
+                if old is not None and old != value:
+                    fret['presses' if value else 'releases'] += 1
+                if key != 'green' and old != value:
+                    event('button', f'{name.upper()} · D{pin}' + (' · PRESSIONADO' if value else ' · SOLTO'))
             for bit, field, presses, releases, name in [
                 (1, 'pressed', 'presses', 'releases', 'GREEN · D15'),
-                (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA · D13')
+                (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA HISTÓRICA · não instalada')
             ]:
+                if bit == 2 and "FRETS" in (state["firmware"] or ""):
+                    state[field] = None
+                    continue
                 value = bool(mask & bit)
                 old = state[field]
                 state[field] = value
@@ -78,6 +96,8 @@ def consume(line):
 def disconnect(message):
     with LOCK:
         BRIDGE.release()
+        for fret in state["frets"].values():
+            fret["pressed"] = None
         state.update(connected=False, whammy_raw=None, pressed=None, strum_pressed=None, error=message, status='Aguardando conexão')
 
 
@@ -86,6 +106,8 @@ def reader():
         try:
             with serial.Serial(state['port'], 115200, timeout=.1, exclusive=True) as device:
                 with LOCK:
+                    for fret in state['frets'].values():
+                        fret['pressed'] = None
                     state.update(connected=True, whammy_raw=None, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
                 event('connection', 'ESP32 conectado · 115200 baud')
                 # Reset with button released; obtains identification and current state.
@@ -149,6 +171,8 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size) or '{}')
             with LOCK:
                 if self.path == '/api/reset':
+                    for fret in state['frets'].values():
+                        fret['presses'] = fret['releases'] = 0
                     state.update(whammy_min=state["whammy_raw"], whammy_max=state["whammy_raw"], presses=0, releases=0, strum_presses=0, strum_releases=0, started=time.time())
                     event('session', 'Nova contagem iniciada')
                 elif self.path == '/api/check':

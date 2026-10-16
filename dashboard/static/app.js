@@ -2,20 +2,37 @@ const $=id=>document.getElementById(id);
 let last=null, fetching=false, historyKey='';
 const stages=[['serial','USB e serial no Zorin','Placa identificada e comunicação estável.'],['button','Um botão físico','Apertos e solturas conferidos no monitor, sem eventos extras.'],['nine','Nove comandos em bancada','Cinco frets, duas palhetas, Start e Select testados.'],['whammy','Whammy analógico','Repouso estável e curso completo conferidos.'],['linux','Clone Hero no desktop','Controle virtual reconhecido e comandos mapeados.'],['ally','ROG Ally / SteamOS','Teste após reconexão e reinício no modo usado na viagem.'],['assembly','Impressão e montagem','Encaixes, movimento, isolamento e cabo revisados.'],['music','Pronto para a viagem','Música inteira e 30 minutos no Ally sem falhas.']];
 for(const [key,title,desc] of stages){const label=document.createElement('label');label.className='check';const input=document.createElement('input');input.type='checkbox';input.id='check-'+key;input.onchange=async()=>{try{await post('/api/check',{key,value:input.checked});toast('Etapa salva neste computador.')}catch(e){input.checked=!input.checked;toast('Não foi possível salvar.')}};const text=document.createElement('span'),strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=title;small.textContent=desc;text.append(strong,small);label.append(input,text);$('checks').append(label)}
+
+const fretColors={green:'#5cdb63',red:'#ff6565',yellow:'#f5d24c',blue:'#63a7ff',orange:'#ffa34c'};
+for(const [key,color] of Object.entries(fretColors)){
+ const card=document.createElement('div');card.className='fret-test';card.style.setProperty('--fret-color',color);
+ const title=document.createElement('strong');title.id='fret-title-'+key;
+ const light=document.createElement('div');light.id='fret-light-'+key;light.className='fret-light';light.textContent='?';
+ const count=document.createElement('small');count.id='fret-count-'+key;
+ card.append(title,light,count);$('frets').append(card);
+}
+function renderFrets(s){for(const key of Object.keys(fretColors)){
+ const f=s?.frets?.[key],known=s?.connected&&!s?.bridge?.timed_out&&f?.pressed!==null&&f?.pressed!==undefined;
+ $('fret-title-'+key).textContent=f?f.name+' · D'+f.pin:key;
+ $('fret-light-'+key).className='fret-light'+(known&&f.pressed?' pressed':'');
+ $('fret-light-'+key).textContent=known?(f.pressed?'Apertado':'Solto'):'Sem leitura';
+ $('fret-count-'+key).textContent=f?f.presses+' apertos · '+f.releases+' solturas':'Aguardando';
+}}
+
 async function post(url,data={}){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Falha ao salvar');return r.json()}
 function toast(text){$('notice').textContent=text;$('notice').style.display='block';setTimeout(()=>$('notice').style.display='none',3000)}
-function offline(text){$('whammy-value').textContent='Sem conexão';$('whammy-bar').value=0;$('whammy-range').textContent='Sem leitura atual';$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
+function offline(text){renderFrets(null);$('whammy-value').textContent='Sem conexão';$('whammy-bar').value=0;$('whammy-range').textContent='Sem leitura atual';$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
 function renderBridge(b){
 if(!b)return;
 $('bridge-pill').textContent=b.ready?'● Controle criado':'○ Acesso pendente';
 $('bridge-pill').className='pill'+(b.ready?'':' off');
-$('virtual-state').textContent=b.ready?('Green '+(b.pressed?'●':'○')+' / Palheta '+(b.strum_pressed?'●':'○')):'Indisponível';
+$('virtual-state').textContent=b.ready?('Máscara de botões: '+b.mask):'Indisponível';
 $('virtual-sent').textContent=b.sent;
-$('virtual-path').textContent=b.event_path?b.event_path+' · BTN_SOUTH / BTN_EAST':'Guitar Lab Virtual Controller · 2 botões';
-$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'D15 → BTN_SOUTH (Green). D13 → BTN_EAST (palhetada). Whammy D34 → ABS_Z (mapeamento pendente).':'Aguardando acesso ao /dev/uinput.';
-try{const pads=Array.from(navigator.getGamepads?.()||[]);const pad=pads.find(p=>p&&p.id.includes('Guitar Lab'));$('gamepad-state').textContent=pad?('Green '+(pad.buttons[0]?.pressed?'●':'○')+' / Palheta '+(pad.buttons[1]?.pressed?'●':'○')):'Não detectado';$('gamepad-hint').textContent=pad?pad.id:'Aperte o botão físico com esta página em foco; alguns navegadores não expõem o controle.';}catch(e){$('gamepad-state').textContent='Indisponível';$('gamepad-hint').textContent='Gamepad API não disponível neste navegador.'}
+$('virtual-path').textContent=b.event_path?b.event_path+' · cinco cores':'Guitar Lab Virtual Controller · 2 botões';
+$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'Cinco cores → botões independentes. Palhetada e menus não instalados nesta montagem. Whammy D34 → ABS_Z.':'Aguardando acesso ao /dev/uinput.';
+try{const pads=Array.from(navigator.getGamepads?.()||[]);const pad=pads.find(p=>p&&p.id.includes('Guitar Lab'));$('gamepad-state').textContent=pad?('Botões ativos: '+pad.buttons.filter(b=>b.pressed).length):'Não detectado';$('gamepad-hint').textContent=pad?pad.id:'Aperte o botão físico com esta página em foco; alguns navegadores não expõem o controle.';}catch(e){$('gamepad-state').textContent='Indisponível';$('gamepad-hint').textContent='Gamepad API não disponível neste navegador.'}
 }
-function render(s){last=s;renderBridge(s.bridge);
+function render(s){last=s;renderBridge(s.bridge);renderFrets(s);
 const analogKnown=s.connected&&!s.bridge?.timed_out&&Number.isInteger(s.whammy_raw);
 $('whammy-value').textContent=analogKnown?Math.round(s.whammy_raw/4095*100)+'% · '+s.whammy_raw+' / 4095':'Aguardando leitura';
 $('whammy-bar').value=analogKnown?s.whammy_raw:0;
