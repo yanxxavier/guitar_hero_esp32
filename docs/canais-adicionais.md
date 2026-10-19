@@ -15,3 +15,16 @@ Teste: conectar quatro sinais nos quatro GPIOs, sem precisar adivinhar inicialme
 28 testes unitários aprovados; novos testes verificam canais simultâneos, isolamento do jogo, duplicatas, baseline, desconexão e limite512 inválido. Testes não substituem os apertos físicos. Modo PINSCAN de cinco fios preservado como ferramenta independente.
 
 A versão v9 usava D25/D32/D26/D27, substituída por v10. O parser não atribui rótulos novos aos canais do v9; exige identificação CHANNELS v10 antes de habilitar os quatro canais no painel. Saídas para jogo continuam bloqueadas para canais extras até identificar as funções.
+
+## Funções confirmadas pelo usuário e eventos reais — 18/10
+
+| Função | GPIO | Bit do protocolo |
+| --- | --- | --- |
+| Palhetada para cima | D27 | 256 |
+| Palhetada para baixo | D14 | 2 |
+| Start | D13 | 64 |
+| Select / Star Power | D26 | 128 |
+
+Cima identificada em rodada de três pares D27. Baixo identificado por relato e vários pares D14. Start D13 e Select D26 confirmados pelo usuário e por eventos recentes. Rótulos e contadores no dashboard atualizados, sem nova gravação (CHANNELS v10 continua ativo).
+
+A correspondência física foi concluída; isso substitui a pendência de identificar funções nos parágrafos históricos acima. A ponte ainda filtra os quatro extras (mask & 61); atualização solicitada nesta etapa foi somente o painel. Saída dos quatro comandos Linux e mapeamento no jogo seguem como próxima etapa. Azul D17 com falha não resolvida.

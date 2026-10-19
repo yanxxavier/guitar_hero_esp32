@@ -36,9 +36,10 @@ def new_frets():
             for key, name, pin, bit in FRETS}
 
 AUX_CHANNELS = ((13, 64), (14, 2), (26, 128), (27, 256))
+AUX_NAMES = {13: "Start", 14: "Palhetada para baixo", 26: "Select / Star Power", 27: "Palhetada para cima"}
 
 def new_aux():
-    return {str(pin): dict(pin=pin, pressed=None, presses=0, releases=0) for pin, bit in AUX_CHANNELS}
+    return {str(pin): dict(pin=pin, name=AUX_NAMES[pin], pressed=None, presses=0, releases=0) for pin, bit in AUX_CHANNELS}
 
 SCAN_PINS = (17, 16, 18, 21, 15)
 
@@ -106,7 +107,7 @@ def consume(line):
                     if old is not None and old != value:
                         channel['presses' if value else 'releases'] += 1
                     if old != value:
-                        event('channel', f'CANAL D{pin}' + (' · PRESSIONADO' if value else ' · SOLTO'))
+                        event('channel', f'{AUX_NAMES[pin].upper()} · D{pin}' + (' · PRESSIONADO' if value else ' · SOLTO'))
             for key, name, pin, bit in FRETS:
                 fret = state['frets'][key]
                 value, old = bool(mask & bit), fret['pressed']
