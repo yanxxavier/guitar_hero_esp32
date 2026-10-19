@@ -28,8 +28,8 @@ try:
     checks = json.loads(CHECKS.read_text())
 except (OSError, ValueError):
     checks = {}
-FRETS = [('green', 'Verde', 15, 1), ('red', 'Vermelho', 18, 4),
-         ('yellow', 'Amarelo', 19, 8), ('blue', 'Azul', 21, 16), ('orange', 'Laranja', 13, 32)]
+FRETS = [('green', 'Verde', 21, 1), ('red', 'Vermelho', 18, 4),
+         ('yellow', 'Amarelo', 16, 8), ('blue', 'Azul', 17, 16), ('orange', 'Laranja', 15, 32)]
 
 def new_frets():
     return {key: dict(name=name, pin=pin, pressed=None, presses=0, releases=0)
@@ -98,7 +98,7 @@ def consume(line):
                 if key != 'green' and old != value:
                     event('button', f'{name.upper()} · D{pin}' + (' · PRESSIONADO' if value else ' · SOLTO'))
             for bit, field, presses, releases, name in [
-                (1, 'pressed', 'presses', 'releases', 'GREEN · D15'),
+                (1, 'pressed', 'presses', 'releases', 'GREEN · D21'),
                 (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA HISTÓRICA · não instalada')
             ]:
                 if bit == 2 and "FRETS" in (state["firmware"] or ""):

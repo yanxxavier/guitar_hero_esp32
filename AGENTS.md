@@ -15,3 +15,5 @@ Este projeto constrói uma guitarra por cabo com ESP32, ponte Linux e dashboard 
 - Correção 16/10: D22 não disponível; laranja usa D13. Não configurar palhetada no D13 enquanto laranja estiver ali. Escolher outro GPIO para palhetada futura.
 
 - 18/10: fios dos cinco frets religados sem identificação de cores em D17/D16/D18/D21/D15. Mapa anterior perdeu validade. Modo temporário PINSCAN identifica pinos, sem comandos para o jogo; não atribuir cores antes do teste sequencial. Ver docs/identificar-fios.md. Quatro switches extras disponíveis/instalados por relato, ligações ainda não confirmadas.
+
+- Mapa identificado pelo usuário em 18/10 após PINSCAN: verde D21, vermelho D18, amarelo D16, azul D17, laranja D15. Firmware v8 e dashboard usam este mapa; substitui mapas anteriores. Manter LARANJA solto no boot (GPIO15). Azul só responde com força maior: causa ainda não diagnosticada, não apresentar como corrigido. Quatro switches extras ainda sem ligação elétrica confirmada, sem implementação no firmware v8. PINSCAN é ferramenta de diagnóstico opcional, não firmware ativo após v8.

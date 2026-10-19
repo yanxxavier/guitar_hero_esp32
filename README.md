@@ -2,7 +2,11 @@
 
 Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/GuitarHero`.
 
-## Identificação temporária dos fios — 18/10/2026
+## Configuração atual — firmware v8, mapa identificado
+
+Verde **D21**, vermelho **D18**, amarelo **D16**, azul **D17**, laranja **D15**, todos NO para GND. Manter laranja solto no boot (GPIO15). Mapa confirmado pelo usuário após PINSCAN; azul só responde com força maior, falha ainda pendente. Firmware v8 usa esse mapa e preserva saídas Linux e whammy D34. Quatro switches extras foram acrescentados por relato, mas ligações ainda não confirmadas e não implementadas no firmware. Ver [cinco cores](docs/cinco-cores.md).
+
+## Histórico: identificação temporária dos fios — 18/10/2026
 
 Chicote do braço religado em D17/D16/D18/D21/D15 sem identificação de cores. Usar [modo PINSCAN](docs/identificar-fios.md) para apertar uma cor por vez e descobrir pino; ponte fica neutra durante diagnóstico. O mapa v7 abaixo é histórico e precisa ser atualizado antes de voltar ao jogo.
 

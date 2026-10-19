@@ -9,7 +9,7 @@ BUTTONS = ((1, e.BTN_SOUTH), (2, e.BTN_EAST), (4, e.BTN_NORTH),
 
 def make_device():
     # Generic gamepad capabilities help SDL identify the device as a controller.
-    # D15/18/19/21/13 send five frets; BTN_EAST reserved for historical strum.
+    # D21/18/16/17/15 send five frets; BTN_EAST reserved for historical strum.
     caps = {e.EV_KEY: [e.BTN_SOUTH, e.BTN_EAST, e.BTN_NORTH, e.BTN_WEST,
                        e.BTN_TL, e.BTN_TR, e.BTN_SELECT, e.BTN_START, e.BTN_MODE],
             e.EV_ABS: [(e.ABS_X, AbsInfo(0, -32768, 32767, 0, 128, 0)),
@@ -79,7 +79,7 @@ class Bridge:
 
     def tick(self):
         self.ensure()
-        # Firmware v7 emits a state every 250ms, including while held.
+        # Firmware v8 emits a state every 250ms, including while held.
         if self.last_frame is not None and self.clock() - self.last_frame > 1.5:
             self.send(0)
             self.timed_out = True
@@ -110,4 +110,4 @@ class Bridge:
         return dict(ready=self.device is not None, name=NAME, button='BTN_SOUTH',
                     pressed=self.pressed, strum_pressed=bool(self.mask & 2), mask=self.mask, sent=self.sent, error=self.error,
                     timed_out=self.timed_out, event_path=getattr(device, 'path', None),
-                    firmware_required='FRETS v7', whammy=self.whammy, axis='ABS_Z')
+                    firmware_required='FRETS v8', whammy=self.whammy, axis='ABS_Z')
