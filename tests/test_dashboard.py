@@ -12,7 +12,7 @@ class InputTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         app.DATA = Path(self.temp.name)
-        app.state.update(scan_mode=False, scan_pins=app.new_scan_pins(), scan_last_frame=None, frets=app.new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
+        app.state.update(aux=app.new_aux(), aux_enabled=False, scan_mode=False, scan_pins=app.new_scan_pins(), scan_last_frame=None, frets=app.new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
         app.state['events'].clear()
 
     def tearDown(self):
@@ -118,6 +118,36 @@ class InputTests(unittest.TestCase):
         app.consume('STATE 1 1000')
         self.assertFalse(app.state['scan_mode'])
         self.assertTrue(app.state['frets']['green']['pressed'])
+
+    def test_aux_channels_do_not_inject_game_buttons(self):
+        from unittest.mock import patch
+        with patch.object(app.BRIDGE, 'frame') as frame:
+            app.consume('GUITARHERO CHANNELS v9')
+            app.consume('STATE 0 1000')
+            app.consume('STATE 511 1000')
+            frame.assert_called_with(61, 1000)
+            self.assertTrue(all(c['pressed'] for c in app.state['aux'].values()))
+            self.assertTrue(all(c['presses'] == 1 for c in app.state['aux'].values()))
+            app.consume('STATE 511 1000')
+            self.assertTrue(all(c['presses'] == 1 for c in app.state['aux'].values()))
+            app.consume('STATE 61 1000')
+            self.assertTrue(all(not c['pressed'] and c['releases'] == 1 for c in app.state['aux'].values()))
+
+    def test_aux_disconnect_and_initial_state_do_not_count_false_edges(self):
+        app.consume('GUITARHERO CHANNELS v9')
+        app.consume('STATE 256 1000')
+        self.assertEqual(app.state['aux']['27']['presses'], 0)
+        app.disconnect('removed')
+        self.assertTrue(all(c['pressed'] is None for c in app.state['aux'].values()))
+        app.consume('STATE 0 1000')
+        self.assertEqual(app.state['aux']['27']['releases'], 0)
+
+    def test_invalid_wide_mask_rejects_frame(self):
+        app.consume('GUITARHERO CHANNELS v9')
+        app.consume('STATE 0 1000')
+        app.consume('STATE 512 3000')
+        self.assertEqual(app.state['whammy_raw'], 1000)
+        self.assertTrue(all(not c['pressed'] for c in app.state['aux'].values()))
 
 if __name__ == '__main__':
     unittest.main()

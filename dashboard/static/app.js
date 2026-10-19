@@ -33,9 +33,27 @@ function renderScan(s){
  }
 }
 
+
+for(const pin of [25,32,26,27]){
+ const card=document.createElement('div');card.className='fret-test';card.style.setProperty('--fret-color','#b9c7dc');
+ const title=document.createElement('strong');title.textContent='Canal D'+pin;
+ const light=document.createElement('div');light.id='aux-light-'+pin;light.className='fret-light';light.textContent='Aguardando';
+ const count=document.createElement('small');count.id='aux-count-'+pin;
+ card.append(title,light,count);$('aux-channels').append(card);
+}
+function renderAux(s){
+ for(const pin of [25,32,26,27]){
+  const channel=s?.aux?.[String(pin)],known=s?.connected&&s?.aux_enabled&&!s?.bridge?.timed_out&&channel?.pressed!==null&&channel?.pressed!==undefined;
+  $('aux-light-'+pin).className='fret-light'+(known&&channel.pressed?' pressed':'');
+  $('aux-light-'+pin).textContent=known?(channel.pressed?'Apertado':'Solto'):'Sem leitura';
+  $('aux-count-'+pin).textContent=channel?channel.presses+' apertos · '+channel.releases+' solturas':'Aguardando';
+ }
+ $('aux-hint').textContent=s?.aux_enabled?'Canais sem função atribuída: aperte somente o switch solicitado no chat.':'Aguardando firmware de canais e ligação em D25, D32, D26 e D27.';
+}
+
 async function post(url,data={}){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Falha ao salvar');return r.json()}
 function toast(text){$('notice').textContent=text;$('notice').style.display='block';setTimeout(()=>$('notice').style.display='none',3000)}
-function offline(text){renderScan(last?{...last,connected:false}:null);renderFrets(null);$('whammy-value').textContent='Sem conexão';$('whammy-bar').value=0;$('whammy-range').textContent='Sem leitura atual';$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
+function offline(text){renderAux(null);renderScan(last?{...last,connected:false}:null);renderFrets(null);$('whammy-value').textContent='Sem conexão';$('whammy-bar').value=0;$('whammy-range').textContent='Sem leitura atual';$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
 function renderBridge(b){
 if(!b)return;
 $('bridge-pill').textContent=b.ready?'● Controle criado':'○ Acesso pendente';
@@ -43,10 +61,10 @@ $('bridge-pill').className='pill'+(b.ready?'':' off');
 $('virtual-state').textContent=b.ready?('Máscara de botões: '+b.mask):'Indisponível';
 $('virtual-sent').textContent=b.sent;
 $('virtual-path').textContent=b.event_path?b.event_path+' · cinco cores':'Guitar Lab Virtual Controller · 2 botões';
-$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'Cinco cores → botões independentes. Palhetada e menus não instalados nesta montagem. Whammy D34 → ABS_Z.':'Aguardando acesso ao /dev/uinput.';
+$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'Cinco cores → botões independentes. Canais extras em identificação, sem saída para o jogo. Whammy D34 → ABS_Z.':'Aguardando acesso ao /dev/uinput.';
 try{const pads=Array.from(navigator.getGamepads?.()||[]);const pad=pads.find(p=>p&&p.id.includes('Guitar Lab'));$('gamepad-state').textContent=pad?('Botões ativos: '+pad.buttons.filter(b=>b.pressed).length):'Não detectado';$('gamepad-hint').textContent=pad?pad.id:'Aperte o botão físico com esta página em foco; alguns navegadores não expõem o controle.';}catch(e){$('gamepad-state').textContent='Indisponível';$('gamepad-hint').textContent='Gamepad API não disponível neste navegador.'}
 }
-function render(s){renderScan(s);last=s;renderBridge(s.bridge);renderFrets(s);
+function render(s){renderAux(s);renderScan(s);last=s;renderBridge(s.bridge);renderFrets(s);
 const analogKnown=s.connected&&!s.bridge?.timed_out&&Number.isInteger(s.whammy_raw);
 $('whammy-value').textContent=analogKnown?Math.round(s.whammy_raw/4095*100)+'% · '+s.whammy_raw+' / 4095':'Aguardando leitura';
 $('whammy-bar').value=analogKnown?s.whammy_raw:0;

@@ -35,12 +35,17 @@ def new_frets():
     return {key: dict(name=name, pin=pin, pressed=None, presses=0, releases=0)
             for key, name, pin, bit in FRETS}
 
+AUX_CHANNELS = ((25, 64), (32, 2), (26, 128), (27, 256))
+
+def new_aux():
+    return {str(pin): dict(pin=pin, pressed=None, presses=0, releases=0) for pin, bit in AUX_CHANNELS}
+
 SCAN_PINS = (17, 16, 18, 21, 15)
 
 def new_scan_pins():
     return {str(pin): None for pin in SCAN_PINS}
 
-state = dict(scan_mode=False, scan_pins=new_scan_pins(), scan_last_frame=None, frets=new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, connected=False, status='Procurando ESP32', port=PORT, pressed=None,
+state = dict(aux=new_aux(), aux_enabled=False, scan_mode=False, scan_pins=new_scan_pins(), scan_last_frame=None, frets=new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, connected=False, status='Procurando ESP32', port=PORT, pressed=None,
              presses=0, releases=0, strum_pressed=None, strum_presses=0, strum_releases=0, firmware=None, last_event=None, started=time.time(),
              events=deque(maxlen=120), checks=checks, error=None)
 
@@ -58,6 +63,8 @@ def consume(line):
         if line.startswith('GUITARHERO '):
             state['firmware'] = line
             state['scan_mode'] = 'PINSCAN' in line
+            state['aux_enabled'] = 'CHANNELS v9' in line
+            for channel in state['aux'].values(): channel['pressed'] = None
             if state['scan_mode']:
                 BRIDGE.release()
                 state.update(scan_pins=new_scan_pins(), scan_last_frame=None, pressed=None, strum_pressed=None, whammy_raw=None)
@@ -76,11 +83,12 @@ def consume(line):
                     event('pin', f'D{pin}' + (' · PRESSIONADO' if value else ' · SOLTO'))
         elif state['scan_mode'] and (line.startswith('STATE ') or line.startswith('BUTTON ')):
             return
-        elif re.fullmatch(r'(?:BUTTON [01]|STATE [0-9]{1,2}(?: [0-9]{1,4})?)', line):
+        elif re.fullmatch(r'(?:BUTTON [01]|STATE [0-9]{1,3}(?: [0-9]{1,4})?)', line):
             parts = line.split()
             mask = int(parts[1])
             raw = int(parts[2]) if len(parts) == 3 else None
-            if mask > 63 or (raw is not None and raw > 4095):
+            limit = 511 if state['aux_enabled'] else 63
+            if mask > limit or (raw is not None and raw > 4095):
                 event('serial', 'Quadro analógico inválido: ' + line)
                 return
             state['whammy_raw'] = raw
@@ -88,7 +96,17 @@ def consume(line):
                 state['whammy_min'] = raw if state['whammy_min'] is None else min(raw, state['whammy_min'])
                 state['whammy_max'] = raw if state['whammy_max'] is None else max(raw, state['whammy_max'])
             state['last_frame'] = time.time()
-            BRIDGE.frame(mask, raw if raw is not None else 0)
+            # Unassigned auxiliary channels are observed only, never injected into the game.
+            BRIDGE.frame(mask & 61 if state['aux_enabled'] else mask, raw if raw is not None else 0)
+            if state['aux_enabled']:
+                for pin, bit in AUX_CHANNELS:
+                    channel = state['aux'][str(pin)]
+                    value, old = bool(mask & bit), channel['pressed']
+                    channel['pressed'] = value
+                    if old is not None and old != value:
+                        channel['presses' if value else 'releases'] += 1
+                    if old != value:
+                        event('channel', f'CANAL D{pin}' + (' · PRESSIONADO' if value else ' · SOLTO'))
             for key, name, pin, bit in FRETS:
                 fret = state['frets'][key]
                 value, old = bool(mask & bit), fret['pressed']
@@ -101,7 +119,7 @@ def consume(line):
                 (1, 'pressed', 'presses', 'releases', 'GREEN · D21'),
                 (2, 'strum_pressed', 'strum_presses', 'strum_releases', 'PALHETADA HISTÓRICA · não instalada')
             ]:
-                if bit == 2 and "FRETS" in (state["firmware"] or ""):
+                if bit == 2 and (state["aux_enabled"] or "FRETS" in (state["firmware"] or "")):
                     state[field] = None
                     continue
                 value = bool(mask & bit)
@@ -120,6 +138,7 @@ def disconnect(message):
     with LOCK:
         BRIDGE.release()
         state.update(scan_pins=new_scan_pins(), scan_last_frame=None)
+        for channel in state["aux"].values(): channel["pressed"] = None
         for fret in state["frets"].values():
             fret["pressed"] = None
         state.update(connected=False, whammy_raw=None, pressed=None, strum_pressed=None, error=message, status='Aguardando conexão')
@@ -132,7 +151,8 @@ def reader():
                 with LOCK:
                     for fret in state['frets'].values():
                         fret['pressed'] = None
-                    state.update(scan_mode=False, scan_pins=new_scan_pins(), scan_last_frame=None, connected=True, whammy_raw=None, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
+                    for channel in state['aux'].values(): channel['pressed'] = None
+                    state.update(aux_enabled=False, scan_mode=False, scan_pins=new_scan_pins(), scan_last_frame=None, connected=True, whammy_raw=None, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
                 event('connection', 'ESP32 conectado · 115200 baud')
                 # Reset with button released; obtains identification and current state.
                 device.dtr = False
@@ -195,6 +215,8 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size) or '{}')
             with LOCK:
                 if self.path == '/api/reset':
+                    for channel in state['aux'].values():
+                        channel['presses'] = channel['releases'] = 0
                     for fret in state['frets'].values():
                         fret['presses'] = fret['releases'] = 0
                     state.update(whammy_min=state["whammy_raw"], whammy_max=state["whammy_raw"], presses=0, releases=0, strum_presses=0, strum_releases=0, started=time.time())
