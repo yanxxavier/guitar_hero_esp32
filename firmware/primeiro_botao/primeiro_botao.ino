@@ -1,6 +1,6 @@
 // ESP32-WROOM-32: cinco switches NO para GND, na ordem verde a laranja.
 // Mantenha Laranja solto ao ligar/reiniciar: GPIO15 é pino de configuração de boot.
-constexpr uint8_t PINS[] = {21, 18, 16, 17, 15, 25, 32, 26, 27};
+constexpr uint8_t PINS[] = {21, 18, 16, 17, 15, 13, 14, 26, 27};
 constexpr uint16_t BITS[] = {1, 4, 8, 16, 32, 64, 2, 128, 256};
 constexpr uint8_t INPUT_COUNT = sizeof(PINS) / sizeof(PINS[0]);
 constexpr uint32_t DEBOUNCE_MS = 5;
@@ -13,7 +13,7 @@ uint32_t changedAt[INPUT_COUNT];
 uint32_t lastReport;
 
 void report() {
-  // Frets: 1/4/8/16/32. Canais extras ainda sem função: D25=64, D32=2, D26=128, D27=256.
+  // Frets: 1/4/8/16/32. Canais extras ainda sem função: D13=64, D14=2, D26=128, D27=256.
   uint16_t mask = 0;
   for (uint8_t i = 0; i < INPUT_COUNT; ++i)
     if (stable[i] == LOW) mask |= BITS[i];
@@ -35,7 +35,7 @@ void setup() {
   whammy = analogRead(WHAMMY_PIN);
   lastSample = millis();
   Serial.begin(115200);
-  Serial.println("GUITARHERO CHANNELS v9 FRETS21,18,16,17,15 AUX25,32,26,27 ADC34");
+  Serial.println("GUITARHERO CHANNELS v10 FRETS21,18,16,17,15 AUX13,14,26,27 ADC34");
   report();
   lastReport = millis();
 }

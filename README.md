@@ -2,9 +2,9 @@
 
 Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/GuitarHero`.
 
-## Configuração atual — firmware v9, canais adicionais em identificação
+## Configuração atual — firmware v10, canais adicionais em identificação
 
-Cinco cores mantidas em D21/D18/D16/D17/D15; azul apresenta falha mesmo sem botão impresso, segundo usuário, ainda sem reparo. Quatro canais D25/D32/D26/D27 preparados no firmware/painel para identificar switches adicionais. Usuário ainda não conectou os fios ao ESP32. Os quatro canais NÃO enviam comandos ao jogo até confirmar suas funções. Ver [ligação e protocolo](docs/canais-adicionais.md). Whammy D34 preservado; laranja D15 solto no boot.
+Cinco cores mantidas em D21/D18/D16/D17/D15; azul apresenta falha mesmo sem botão impresso, segundo usuário, ainda sem reparo. Quatro canais D13/D14/D27/D26 preparados no firmware/painel para identificar switches adicionais. Usuário confirmou fios conectados nesses quatro GPIOs, funções ainda por identificar. Os quatro canais NÃO enviam comandos ao jogo até confirmar suas funções. Ver [ligação e protocolo](docs/canais-adicionais.md). Whammy D34 preservado; laranja D15 solto no boot.
 
 ## Histórico — firmware v8, mapa identificado
 

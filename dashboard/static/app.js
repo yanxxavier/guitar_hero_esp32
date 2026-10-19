@@ -34,7 +34,7 @@ function renderScan(s){
 }
 
 
-for(const pin of [25,32,26,27]){
+for(const pin of [13,14,27,26]){
  const card=document.createElement('div');card.className='fret-test';card.style.setProperty('--fret-color','#b9c7dc');
  const title=document.createElement('strong');title.textContent='Canal D'+pin;
  const light=document.createElement('div');light.id='aux-light-'+pin;light.className='fret-light';light.textContent='Aguardando';
@@ -42,13 +42,13 @@ for(const pin of [25,32,26,27]){
  card.append(title,light,count);$('aux-channels').append(card);
 }
 function renderAux(s){
- for(const pin of [25,32,26,27]){
+ for(const pin of [13,14,27,26]){
   const channel=s?.aux?.[String(pin)],known=s?.connected&&s?.aux_enabled&&!s?.bridge?.timed_out&&channel?.pressed!==null&&channel?.pressed!==undefined;
   $('aux-light-'+pin).className='fret-light'+(known&&channel.pressed?' pressed':'');
   $('aux-light-'+pin).textContent=known?(channel.pressed?'Apertado':'Solto'):'Sem leitura';
   $('aux-count-'+pin).textContent=channel?channel.presses+' apertos · '+channel.releases+' solturas':'Aguardando';
  }
- $('aux-hint').textContent=s?.aux_enabled?'Canais sem função atribuída: aperte somente o switch solicitado no chat.':'Aguardando firmware de canais e ligação em D25, D32, D26 e D27.';
+ $('aux-hint').textContent=s?.aux_enabled?'Canais sem função atribuída: aperte somente o switch solicitado no chat.':'Aguardando firmware de canais e ligação em D13, D14, D27 e D26.';
 }
 
 async function post(url,data={}){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Falha ao salvar');return r.json()}

@@ -35,7 +35,7 @@ def new_frets():
     return {key: dict(name=name, pin=pin, pressed=None, presses=0, releases=0)
             for key, name, pin, bit in FRETS}
 
-AUX_CHANNELS = ((25, 64), (32, 2), (26, 128), (27, 256))
+AUX_CHANNELS = ((13, 64), (14, 2), (26, 128), (27, 256))
 
 def new_aux():
     return {str(pin): dict(pin=pin, pressed=None, presses=0, releases=0) for pin, bit in AUX_CHANNELS}
@@ -63,7 +63,7 @@ def consume(line):
         if line.startswith('GUITARHERO '):
             state['firmware'] = line
             state['scan_mode'] = 'PINSCAN' in line
-            state['aux_enabled'] = 'CHANNELS v9' in line
+            state['aux_enabled'] = 'CHANNELS v10' in line
             for channel in state['aux'].values(): channel['pressed'] = None
             if state['scan_mode']:
                 BRIDGE.release()

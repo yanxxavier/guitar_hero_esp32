@@ -122,7 +122,7 @@ class InputTests(unittest.TestCase):
     def test_aux_channels_do_not_inject_game_buttons(self):
         from unittest.mock import patch
         with patch.object(app.BRIDGE, 'frame') as frame:
-            app.consume('GUITARHERO CHANNELS v9')
+            app.consume('GUITARHERO CHANNELS v10')
             app.consume('STATE 0 1000')
             app.consume('STATE 511 1000')
             frame.assert_called_with(61, 1000)
@@ -134,7 +134,7 @@ class InputTests(unittest.TestCase):
             self.assertTrue(all(not c['pressed'] and c['releases'] == 1 for c in app.state['aux'].values()))
 
     def test_aux_disconnect_and_initial_state_do_not_count_false_edges(self):
-        app.consume('GUITARHERO CHANNELS v9')
+        app.consume('GUITARHERO CHANNELS v10')
         app.consume('STATE 256 1000')
         self.assertEqual(app.state['aux']['27']['presses'], 0)
         app.disconnect('removed')
@@ -143,11 +143,17 @@ class InputTests(unittest.TestCase):
         self.assertEqual(app.state['aux']['27']['releases'], 0)
 
     def test_invalid_wide_mask_rejects_frame(self):
-        app.consume('GUITARHERO CHANNELS v9')
+        app.consume('GUITARHERO CHANNELS v10')
         app.consume('STATE 0 1000')
         app.consume('STATE 512 3000')
         self.assertEqual(app.state['whammy_raw'], 1000)
         self.assertTrue(all(not c['pressed'] for c in app.state['aux'].values()))
+
+    def test_old_aux_firmware_is_not_mislabeled_as_new_pins(self):
+        app.consume('GUITARHERO CHANNELS v9')
+        app.consume('STATE 256 1000')
+        self.assertFalse(app.state['aux_enabled'])
+        self.assertTrue(all(c['pressed'] is None for c in app.state['aux'].values()))
 
 if __name__ == '__main__':
     unittest.main()
