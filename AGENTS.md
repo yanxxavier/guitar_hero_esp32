@@ -13,3 +13,5 @@ Este projeto constrói uma guitarra por cabo com ESP32, ponte Linux e dashboard 
 
 - Atualização 16/10/2026: montagem atual tem somente cinco cores no braço, D15/D18/D19/D21/D13 para GND; palhetada, Start e Select não instalados. Firmware v7 lê cinco frets, mantendo protocolo STATE N A e whammy D34. Testes físicos dos cinco switches definitivos pendentes. Relatos anteriores D13 são da bancada anterior. Ver docs/cinco-cores.md.
 - Correção 16/10: D22 não disponível; laranja usa D13. Não configurar palhetada no D13 enquanto laranja estiver ali. Escolher outro GPIO para palhetada futura.
+
+- 18/10: fios dos cinco frets religados sem identificação de cores em D17/D16/D18/D21/D15. Mapa anterior perdeu validade. Modo temporário PINSCAN identifica pinos, sem comandos para o jogo; não atribuir cores antes do teste sequencial. Ver docs/identificar-fios.md. Quatro switches extras disponíveis/instalados por relato, ligações ainda não confirmadas.

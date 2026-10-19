@@ -2,7 +2,11 @@
 
 Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/GuitarHero`.
 
-## Configuração atual — firmware v7, cinco cores
+## Identificação temporária dos fios — 18/10/2026
+
+Chicote do braço religado em D17/D16/D18/D21/D15 sem identificação de cores. Usar [modo PINSCAN](docs/identificar-fios.md) para apertar uma cor por vez e descobrir pino; ponte fica neutra durante diagnóstico. O mapa v7 abaixo é histórico e precisa ser atualizado antes de voltar ao jogo.
+
+## Configuração anterior — firmware v7, cinco cores
 
 - Montagem atual: switches no braço, na ordem verde a laranja, em **D15/D18/D19/D21/D13**, todos para GND comum com INPUT_PULLUP.
 - **Palhetada, Start e Select não instalados nesta montagem.** Validação anterior de palhetada D13 é histórica.

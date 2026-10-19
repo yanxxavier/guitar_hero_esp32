@@ -12,7 +12,7 @@ class InputTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         app.DATA = Path(self.temp.name)
-        app.state.update(frets=app.new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
+        app.state.update(scan_mode=False, scan_pins=app.new_scan_pins(), scan_last_frame=None, frets=app.new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, pressed=None, presses=0, releases=0, connected=True, strum_pressed=None, strum_presses=0, strum_releases=0)
         app.state['events'].clear()
 
     def tearDown(self):
@@ -94,6 +94,30 @@ class InputTests(unittest.TestCase):
         self.assertTrue(all(f['pressed'] is None for f in app.state['frets'].values()))
         app.consume('STATE 0 1000')
         self.assertEqual(app.state['frets']['orange']['releases'], 1)
+
+    def test_scan_identifies_raw_pin_without_fret_commands(self):
+        from unittest.mock import patch
+        with patch.object(app.BRIDGE, 'frame') as frame, patch.object(app.BRIDGE, 'release') as release:
+            app.consume('GUITARHERO PINSCAN v1 GPIO17 GPIO16 GPIO18 GPIO21 GPIO15')
+            app.consume('SCAN 0')
+            app.consume('SCAN 2')
+            self.assertTrue(app.state['scan_pins']['16'])
+            self.assertFalse(app.state['scan_pins']['17'])
+            self.assertIsNone(app.state['frets']['green']['pressed'])
+            app.consume('STATE 61 2000')
+            frame.assert_not_called()
+            self.assertTrue(release.called)
+            app.consume('SCAN 32')
+            self.assertTrue(app.state['scan_pins']['16'])
+            app.disconnect('removed')
+            self.assertTrue(all(v is None for v in app.state['scan_pins'].values()))
+
+    def test_game_firmware_exits_scan_mode(self):
+        app.consume('GUITARHERO PINSCAN v1')
+        app.consume('GUITARHERO FRETS v7')
+        app.consume('STATE 1 1000')
+        self.assertFalse(app.state['scan_mode'])
+        self.assertTrue(app.state['frets']['green']['pressed'])
 
 if __name__ == '__main__':
     unittest.main()

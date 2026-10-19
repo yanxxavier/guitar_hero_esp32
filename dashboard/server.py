@@ -35,7 +35,12 @@ def new_frets():
     return {key: dict(name=name, pin=pin, pressed=None, presses=0, releases=0)
             for key, name, pin, bit in FRETS}
 
-state = dict(frets=new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, connected=False, status='Procurando ESP32', port=PORT, pressed=None,
+SCAN_PINS = (17, 16, 18, 21, 15)
+
+def new_scan_pins():
+    return {str(pin): None for pin in SCAN_PINS}
+
+state = dict(scan_mode=False, scan_pins=new_scan_pins(), scan_last_frame=None, frets=new_frets(), whammy_raw=None, whammy_min=None, whammy_max=None, connected=False, status='Procurando ESP32', port=PORT, pressed=None,
              presses=0, releases=0, strum_pressed=None, strum_presses=0, strum_releases=0, firmware=None, last_event=None, started=time.time(),
              events=deque(maxlen=120), checks=checks, error=None)
 
@@ -52,7 +57,25 @@ def consume(line):
     with LOCK:
         if line.startswith('GUITARHERO '):
             state['firmware'] = line
+            state['scan_mode'] = 'PINSCAN' in line
+            if state['scan_mode']:
+                BRIDGE.release()
+                state.update(scan_pins=new_scan_pins(), scan_last_frame=None, pressed=None, strum_pressed=None, whammy_raw=None)
+                for fret in state['frets'].values(): fret['pressed'] = None
             event('firmware', line)
+        elif state['scan_mode'] and re.fullmatch(r'SCAN [0-9]{1,2}', line):
+            mask = int(line.split()[1])
+            if mask > 31:
+                return
+            BRIDGE.release()
+            state['scan_last_frame'] = time.time()
+            for i, pin in enumerate(SCAN_PINS):
+                value, old = bool(mask & (1 << i)), state['scan_pins'][str(pin)]
+                state['scan_pins'][str(pin)] = value
+                if old != value:
+                    event('pin', f'D{pin}' + (' · PRESSIONADO' if value else ' · SOLTO'))
+        elif state['scan_mode'] and (line.startswith('STATE ') or line.startswith('BUTTON ')):
+            return
         elif re.fullmatch(r'(?:BUTTON [01]|STATE [0-9]{1,2}(?: [0-9]{1,4})?)', line):
             parts = line.split()
             mask = int(parts[1])
@@ -96,6 +119,7 @@ def consume(line):
 def disconnect(message):
     with LOCK:
         BRIDGE.release()
+        state.update(scan_pins=new_scan_pins(), scan_last_frame=None)
         for fret in state["frets"].values():
             fret["pressed"] = None
         state.update(connected=False, whammy_raw=None, pressed=None, strum_pressed=None, error=message, status='Aguardando conexão')
@@ -108,7 +132,7 @@ def reader():
                 with LOCK:
                     for fret in state['frets'].values():
                         fret['pressed'] = None
-                    state.update(connected=True, whammy_raw=None, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
+                    state.update(scan_mode=False, scan_pins=new_scan_pins(), scan_last_frame=None, connected=True, whammy_raw=None, pressed=None, strum_pressed=None, firmware=None, error=None, status='Serial conectada')
                 event('connection', 'ESP32 conectado · 115200 baud')
                 # Reset with button released; obtains identification and current state.
                 device.dtr = False

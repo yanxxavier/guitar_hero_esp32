@@ -19,9 +19,23 @@ function renderFrets(s){for(const key of Object.keys(fretColors)){
  $('fret-count-'+key).textContent=f?f.presses+' apertos · '+f.releases+' solturas':'Aguardando';
 }}
 
+
+for(const pin of [17,16,18,21,15]){
+ const el=document.createElement('div');el.id='scan-pin-'+pin;el.className='fret-light';el.style.setProperty('--fret-color','#c4f46b');el.style.flex='1';el.textContent='D'+pin;
+ $('scan-pins').append(el);
+}
+function renderScan(s){
+ const scan=!!s?.scan_mode;document.body.classList.toggle('pin-scan',scan);$('scan-panel').hidden=!scan;
+ const fresh=s?.connected&&s?.scan_last_frame&&Date.now()/1000-s.scan_last_frame<1.5;
+ for(const pin of [17,16,18,21,15]){
+  const value=s?.scan_pins?.[String(pin)],known=fresh&&value!==null&&value!==undefined;
+  const el=$('scan-pin-'+pin);el.className='fret-light'+(known&&value?' pressed':'');el.textContent='D'+pin+' · '+(known?(value?'Apertado':'Solto'):'Sem leitura');
+ }
+}
+
 async function post(url,data={}){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('Falha ao salvar');return r.json()}
 function toast(text){$('notice').textContent=text;$('notice').style.display='block';setTimeout(()=>$('notice').style.display='none',3000)}
-function offline(text){renderFrets(null);$('whammy-value').textContent='Sem conexão';$('whammy-bar').value=0;$('whammy-range').textContent='Sem leitura atual';$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
+function offline(text){renderScan(last?{...last,connected:false}:null);renderFrets(null);$('whammy-value').textContent='Sem conexão';$('whammy-bar').value=0;$('whammy-range').textContent='Sem leitura atual';$('connection').textContent=text;$('connection').className='pill off';$('button-light').className='hardware-button';$('button-status').textContent='Estado desconhecido';$('button-hint').textContent='Aguardando dados reais da placa.';$('bridge-pill').textContent='○ Painel desconectado';$('bridge-pill').className='pill off';$('virtual-state').textContent='Desconhecido';$('strum-light').className='hardware-button';$('strum-status').textContent='Desconhecido';$('strum-hint').textContent='Sem dados atuais'}
 function renderBridge(b){
 if(!b)return;
 $('bridge-pill').textContent=b.ready?'● Controle criado':'○ Acesso pendente';
@@ -32,7 +46,7 @@ $('virtual-path').textContent=b.event_path?b.event_path+' · cinco cores':'Guita
 $('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'Cinco cores → botões independentes. Palhetada e menus não instalados nesta montagem. Whammy D34 → ABS_Z.':'Aguardando acesso ao /dev/uinput.';
 try{const pads=Array.from(navigator.getGamepads?.()||[]);const pad=pads.find(p=>p&&p.id.includes('Guitar Lab'));$('gamepad-state').textContent=pad?('Botões ativos: '+pad.buttons.filter(b=>b.pressed).length):'Não detectado';$('gamepad-hint').textContent=pad?pad.id:'Aperte o botão físico com esta página em foco; alguns navegadores não expõem o controle.';}catch(e){$('gamepad-state').textContent='Indisponível';$('gamepad-hint').textContent='Gamepad API não disponível neste navegador.'}
 }
-function render(s){last=s;renderBridge(s.bridge);renderFrets(s);
+function render(s){renderScan(s);last=s;renderBridge(s.bridge);renderFrets(s);
 const analogKnown=s.connected&&!s.bridge?.timed_out&&Number.isInteger(s.whammy_raw);
 $('whammy-value').textContent=analogKnown?Math.round(s.whammy_raw/4095*100)+'% · '+s.whammy_raw+' / 4095':'Aguardando leitura';
 $('whammy-bar').value=analogKnown?s.whammy_raw:0;
