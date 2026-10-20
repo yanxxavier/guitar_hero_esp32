@@ -4,7 +4,7 @@ Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/
 
 ## Configuração atual — firmware v10, canais adicionais em identificação
 
-Cinco cores mantidas em D21/D18/D16/D17/D15; azul apresenta falha mesmo sem botão impresso, segundo usuário, ainda sem reparo. Mapa físico dos extras confirmado: **cima D27, baixo D14, Start D13, Select/Star Power D26**. Dashboard mostra funções e contadores individuais. Os quatro canais ainda NÃO enviam comandos ao jogo; habilitar a ponte é a próxima etapa. Ver [ligação e protocolo](docs/canais-adicionais.md). Whammy D34 preservado; laranja D15 solto no boot.
+Cinco cores mantidas em D21/D18/D16/D17/D15; azul apresenta falha mesmo sem botão impresso, segundo usuário, ainda sem reparo. Mapa físico dos extras confirmado: **cima D14, baixo D27, Start D13, Select/Star Power D26**. Dashboard mostra funções e contadores individuais. Os quatro canais ainda NÃO enviam comandos ao jogo; habilitar a ponte é a próxima etapa. Ver [ligação e protocolo](docs/canais-adicionais.md). Whammy D34 preservado; laranja D15 solto no boot.
 
 ## Histórico — firmware v8, mapa identificado
 

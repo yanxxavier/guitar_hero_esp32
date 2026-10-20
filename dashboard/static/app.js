@@ -34,7 +34,7 @@ function renderScan(s){
 }
 
 
-for(const pin of [27,14,13,26]){
+for(const pin of [14,27,13,26]){
  const card=document.createElement('div');card.className='fret-test';card.style.setProperty('--fret-color','#b9c7dc');
  const title=document.createElement('strong');title.id='aux-title-'+pin;title.textContent='Canal D'+pin;
  const light=document.createElement('div');light.id='aux-light-'+pin;light.className='fret-light';light.textContent='Aguardando';
@@ -42,7 +42,7 @@ for(const pin of [27,14,13,26]){
  card.append(title,light,count);$('aux-channels').append(card);
 }
 function renderAux(s){
- for(const pin of [27,14,13,26]){
+ for(const pin of [14,27,13,26]){
   const channel=s?.aux?.[String(pin)],known=s?.connected&&s?.aux_enabled&&!s?.bridge?.timed_out&&channel?.pressed!==null&&channel?.pressed!==undefined;
   if(channel)$('aux-title-'+pin).textContent=channel.name+' · D'+pin;
   $('aux-light-'+pin).className='fret-light'+(known&&channel.pressed?' pressed':'');

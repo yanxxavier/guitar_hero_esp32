@@ -23,3 +23,5 @@ Este projeto constrói uma guitarra por cabo com ESP32, ponte Linux e dashboard 
 - Correção posterior 18/10: usuário conectou quatro sinais em D13/D14/D27/D26 e reconectou ESP32. CHANNELS v10 lê esses canais; funções ainda não identificadas. Substitui D25/D32 do v9. Não habilitar extras para jogo até confirmar correspondência física.
 
 - Funções dos quatro extras confirmadas posteriormente em18/10: cima D27, baixo D14, Start D13, Select/Star Power D26. Dashboard com rótulos funcionais e contadores; CHANNELS v10 continua ativo sem nova gravação. Ponte ainda filtra extras (mask & 61); habilitação Linux e teste no jogo pendentes. Azul D17 segue com falha, sem reparo confirmado.
+
+- Atualização20/10/2026: usuário solicitou inverter palhetadas: **CIMA D14, BAIXO D27**. StartD13/SelectD26 mantidos. CHANNELS v10 lê GPIOs brutos, sem alteração/gravação; rótulos e ordem visual atualizados no dashboard. Extras ainda filtrados da ponte, teste no jogo pendente. Substitui orientação cima27/baixo14 dos registros anteriores.

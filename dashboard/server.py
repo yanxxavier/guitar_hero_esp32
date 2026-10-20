@@ -36,7 +36,7 @@ def new_frets():
             for key, name, pin, bit in FRETS}
 
 AUX_CHANNELS = ((13, 64), (14, 2), (26, 128), (27, 256))
-AUX_NAMES = {13: "Start", 14: "Palhetada para baixo", 26: "Select / Star Power", 27: "Palhetada para cima"}
+AUX_NAMES = {13: "Start", 14: "Palhetada para cima", 26: "Select / Star Power", 27: "Palhetada para baixo"}
 
 def new_aux():
     return {str(pin): dict(pin=pin, name=AUX_NAMES[pin], pressed=None, presses=0, releases=0) for pin, bit in AUX_CHANNELS}

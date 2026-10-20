@@ -20,11 +20,14 @@ A versão v9 usava D25/D32/D26/D27, substituída por v10. O parser não atribui 
 
 | Função | GPIO | Bit do protocolo |
 | --- | --- | --- |
-| Palhetada para cima | D27 | 256 |
-| Palhetada para baixo | D14 | 2 |
+| Palhetada para cima | D14 | 2 |
+| Palhetada para baixo | D27 | 256 |
 | Start | D13 | 64 |
 | Select / Star Power | D26 | 128 |
 
 Cima identificada em rodada de três pares D27. Baixo identificado por relato e vários pares D14. Start D13 e Select D26 confirmados pelo usuário e por eventos recentes. Rótulos e contadores no dashboard atualizados, sem nova gravação (CHANNELS v10 continua ativo).
 
 A correspondência física foi concluída; isso substitui a pendência de identificar funções nos parágrafos históricos acima. A ponte ainda filtra os quatro extras (mask & 61); atualização solicitada nesta etapa foi somente o painel. Saída dos quatro comandos Linux e mapeamento no jogo seguem como próxima etapa. Azul D17 com falha não resolvida.
+
+## Inversão solicitada em20/10/2026
+Usuário pediu trocar funções de cima/baixo: **CIMA D14, BAIXO D27**. StartD13 e SelectD26 permanecem. Firmware CHANNELS v10 transmite canais brutos; sem nova gravação ou troca de bits. Dashboard/logs/ordem visual atualizados. Testes físicos anteriores referem-se à orientação antiga; conferir nova orientação no painel. Extras continuam sem saída para jogo.
