@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QLabel, QPushButton, QComboBox, QCheckBox, QTabWidget, QLineEdit, QFileDialog, QMessageBox,
     QPlainTextEdit, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QSplitter, QScrollArea)
 from . import config, game, music, firmware
+from . import manual
+from .runtime import external
 from . import __version__
 from .engine import Engine, ports
 
@@ -104,6 +106,8 @@ class Window(QMainWindow):
         self.callbacks={};self.busy=set();self.selected=0;self.learning=None;self.edge=0;self.rows=[];self.page=1
         self.revision=0
         self.setWindowTitle('Guitar Lab '+__version__);self.resize(1160,820)
+        help_action=self.menuBar().addMenu('Ajuda').addAction('Manual do aplicativo')
+        help_action.setShortcut('F1');help_action.triggered.connect(self.open_manual)
         base=QWidget();layout=QVBoxLayout(base);layout.setContentsMargins(24,18,24,14);layout.setSpacing(14)
         heading=QHBoxLayout();title=QLabel('GUITAR LAB');title.setStyleSheet('font-size:24px;font-weight:700;color:#67e8a4')
         heading.addWidget(title);heading.addStretch();self.status=QLabel('Desconectado');heading.addWidget(self.status);layout.addLayout(heading)
@@ -202,7 +206,7 @@ class Window(QMainWindow):
         fw.setWordWrap(True);box.addWidget(fw)
         box.addWidget(self.button('Preparar ferramentas de gravação · online',self.prepare_tools))
         self.flash_button=self.button('Instalar firmware configurável v11…',self.flash);box.addWidget(self.flash_button)
-        box.addWidget(self.button('Abrir guia do aplicativo',lambda:QDesktopServices.openUrl(QUrl.fromLocalFile(str(ROOT/'docs/aplicativo.md')))))
+        box.addWidget(self.button('Manual do aplicativo · F1',self.open_manual))
         box.addStretch();scroll=QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(page);self.tabs.addTab(scroll,'Configuração')
 
     def build_music(self):
@@ -291,7 +295,7 @@ class Window(QMainWindow):
         # pkexec displays the desktop's own authentication prompt. Never run the app as root.
         command=['pkexec','bash',str(ROOT/'tools/setup-permissions.sh')]
         def run():
-            r=subprocess.run(command,capture_output=True,text=True,timeout=120)
+            r=external(command,capture_output=True,text=True,timeout=120)
             if r.returncode:raise ValueError(r.stderr or 'Configuração cancelada.')
             return r.stdout
         self.task('permissions',run)
@@ -308,6 +312,13 @@ class Window(QMainWindow):
     def prepare_tools(self):
         if self.busy.intersection({'tools','firmware'}):return self.message('Aguarde a preparação ou gravação em andamento.')
         self.task('tools',lambda:firmware.prepare(self.signals.progress.emit))
+
+    def open_manual(self):
+        try:
+            path=manual.render()
+            if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
+                raise ValueError('Abra o manual pelo arquivo: '+str(path))
+        except Exception as e:self.fail(e)
 
     def search_music(self):
         self.page=1;self.perform_search()
@@ -399,6 +410,17 @@ QProgressBar::chunk {background:#3d9e75;} QCheckBox {padding:7px 0;} QLabel {pad
 
 def main():
     app=QApplication(sys.argv);app.setApplicationName('Guitar Lab');app.setOrganizationName('GuitarLab');app.setStyleSheet(STYLE)
+    if '--self-test' in sys.argv:
+        window=Window(auto=False);app.processEvents()
+        assert window.tabs.count()==4
+        assert (ROOT/'docs/manual.md').is_file()
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            assert 'data:image/png' in manual.render(Path(temp)/'manual.html').read_text()
+        import esptool
+        if (ROOT/'firmware/prebuilt/manifest.json').exists():firmware.prebuilt_images()
+        window.close()
+        return 0
     root=config.data_dir();root.mkdir(parents=True,exist_ok=True);lock=QLockFile(str(root/'window.lock'))
     if not lock.tryLock(0):
         QMessageBox.information(None,'Guitar Lab','O aplicativo já está aberto.');return 0

@@ -1,0 +1,73 @@
+name: Build and publish beta release
+on:
+  push:
+    branches: [main]
+    paths: ['release/version.txt', '.github/workflows/release.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  firmware:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-release.txt
+      - run: python tools/build-firmware-release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: project-firmware-v11
+          path: firmware/prebuilt/
+  packages:
+    needs: firmware
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Linux graphical runtime
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libopengl0 libxcb-cursor0
+      - run: python -m pip install -r requirements-release.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: project-firmware-v11
+          path: firmware/prebuilt/
+      - run: python -m unittest discover -s tests -p test_desktop.py -v
+      - run: python tools/build-release.py
+      - name: Test packaged application without hardware
+        run: python -c "import os,subprocess; p='dist/GuitarLab/GuitarLab'+('.exe' if os.name=='nt' else ''); subprocess.run([p,'--self-test'],check=True,timeout=60)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ runner.os }}
+          path: build/release-assets/
+  publish:
+    needs: packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          merge-multiple: true
+          path: build/release-assets/
+      - name: Publish complete prerelease with checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/publish-release.py

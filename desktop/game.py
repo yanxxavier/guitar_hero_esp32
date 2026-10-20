@@ -6,11 +6,12 @@ import subprocess
 import sys
 from pathlib import Path
 from .config import data_dir
+from .runtime import external
 
 def running():
     if sys.platform == 'win32':
         # Only process names, never command lines or unrelated window contents.
-        result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq clonehero.exe', '/FO', 'CSV', '/NH'],
+        result = external(['tasklist', '/FI', 'IMAGENAME eq clonehero.exe', '/FO', 'CSV', '/NH'],
                                 capture_output=True, text=True, creationflags=0x08000000)
         return 'clonehero.exe' in result.stdout.lower()
     for p in Path('/proc').glob('[0-9]*/comm'):
@@ -86,5 +87,5 @@ def launch(profile):
     if running():
         return 'O Clone Hero já está aberto.'
     # No shell, command substitution or user-provided arguments.
-    subprocess.Popen([str(path)], cwd=path.parent, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    external([str(path)], spawn=True, cwd=path.parent, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return 'Clone Hero aberto. Mantenha Guitar Lab conectado durante a partida.'

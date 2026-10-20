@@ -1,5 +1,7 @@
 import configparser
 import io
+import hashlib
+import json
 import tempfile
 import sys
 import unittest
@@ -10,6 +12,34 @@ from desktop import config, game, music
 from desktop.engine import Engine
 
 class DesktopTests(unittest.TestCase):
+    def test_offline_manual_embeds_all_images_and_version(self):
+        from desktop import manual, __version__
+        with tempfile.TemporaryDirectory() as temp:
+            result=manual.render(Path(temp)/'manual.html').read_text()
+            self.assertIn(__version__,result)
+            self.assertNotIn('{{VERSION}}',result)
+            self.assertNotIn('src="manual-assets/',result)
+            self.assertEqual(result.count('src="data:image/png;base64,'),3)
+            self.assertIn('Windows',result)
+
+    def test_bundled_firmware_is_verified_before_accessing_hardware(self):
+        from desktop import firmware
+        with tempfile.TemporaryDirectory() as temp,patch('desktop.firmware.ROOT',Path(temp)):
+            folder=Path(temp)/'firmware/prebuilt';folder.mkdir(parents=True)
+            images=[]
+            for address in (0x1000,0x8000,0xe000,0x10000):
+                file=hex(address)+'.bin';data=str(address).encode();(folder/file).write_bytes(data)
+                images.append(dict(address=hex(address),file=file,sha256=hashlib.sha256(data).hexdigest()))
+            (folder/'manifest.json').write_text(json.dumps(dict(chip='esp32',firmware='CONFIG v11',images=images)))
+            self.assertEqual(len(firmware.prebuilt_images()),4)
+            (folder/images[0]['file']).write_bytes(b'corrupt')
+            with self.assertRaisesRegex(ValueError,'corrompido'):firmware.prebuilt_images()
+
+    def test_external_program_does_not_receive_bundled_libraries(self):
+        from desktop.runtime import external_env
+        with patch('sys.frozen',True,create=True),patch.dict('os.environ',{'LD_LIBRARY_PATH':'/bundle','LD_LIBRARY_PATH_ORIG':'/system'}):
+            self.assertEqual(external_env()['LD_LIBRARY_PATH'],'/system')
+
     def test_profile_swap_keeps_nine_unique_inputs_and_chords(self):
         swapped=config.swap_pin(config.DEFAULT_PINS,0,18)
         self.assertEqual(swapped[:2],[18,21])

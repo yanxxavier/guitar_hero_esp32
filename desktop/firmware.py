@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 from .config import data_dir
+from .runtime import external_env
+from .ownership import Ownership
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,13 +25,16 @@ def cli_path():
     return str(local) if local.exists() else shutil.which(name)
 
 def tool_env():
-    env = os.environ.copy()
+    env = external_env()
     env['PATH'] = str(Path(sys.executable).parent) + os.pathsep + env.get('PATH', '')
     if (data_dir() / 'tools/isolated.json').exists():
         env['ARDUINO_DIRECTORIES_DATA'] = str(data_dir() / 'tools/arduino-data')
     return env
 
 def prepare(progress=lambda _:None):
+    if (ROOT/'firmware/prebuilt/manifest.json').exists():
+        prebuilt_images()
+        return 'Firmware v11 e gravador incluídos no aplicativo. Nenhuma gravação foi iniciada.'
     cli=cli_path()
     if not cli:
         system='Windows' if sys.platform=='win32' else 'Linux'
@@ -79,7 +84,50 @@ def prepare(progress=lambda _:None):
         marker=data_dir()/'tools/isolated.json';marker.parent.mkdir(parents=True,exist_ok=True);marker.write_text('{}')
     return 'Ferramentas prontas: Arduino CLI e ESP32 2.0.17. Nenhum firmware foi gravado.'
 
+def prebuilt_images():
+    folder=ROOT/'firmware/prebuilt'
+    manifest=json.loads((folder/'manifest.json').read_text())
+    if manifest.get('chip')!='esp32' or manifest.get('firmware')!='CONFIG v11':
+        raise ValueError('Pacote de firmware incompatível com o ESP32 deste projeto.')
+    images=[]
+    for entry in manifest['images']:
+        name=entry['file']
+        if Path(name).name!=name:raise ValueError('Nome de arquivo inválido no pacote de firmware.')
+        path=folder/name
+        if hashlib.sha256(path.read_bytes()).hexdigest()!=entry['sha256']:
+            raise ValueError('Firmware corrompido; extraia novamente o pacote da release.')
+        images.append((int(entry['address'],16),path))
+    if sorted(a for a,_ in images)!=[0x1000,0x8000,0xe000,0x10000]:
+        raise ValueError('Mapa de flash inválido no pacote.')
+    return images
+
 def upload(port, progress=lambda _:None):
+    if not port:raise ValueError('Selecione a porta USB antes de gravar.')
+    owner=Ownership().acquire()
+    try:
+        return _upload(port,progress)
+    finally:
+        owner.close()
+
+def _upload(port, progress):
+    if (ROOT/'firmware/prebuilt/manifest.json').exists():
+        import contextlib
+        import io
+        import esptool
+        images=prebuilt_images()
+        args=['--chip','esp32','--port',port,'--baud','460800','--before','default-reset','--after','hard-reset',
+              'write-flash','--flash-mode','keep','--flash-freq','keep','--flash-size','keep']
+        for address,path in images:args.extend([hex(address),str(path)])
+        progress('Gravando firmware v11 incluído… mantenha o USB conectado.')
+        output=io.StringIO()
+        try:
+            with contextlib.redirect_stdout(output),contextlib.redirect_stderr(output):
+                try:esptool.main(args)
+                except SystemExit as e:
+                    if e.code:raise RuntimeError('Gravação falhou: '+output.getvalue()[-3000:]) from e
+        except Exception as e:
+            raise ValueError(str(e)+'\n'+output.getvalue()[-3000:]) from e
+        return 'Firmware v11 gravado e verificado pelo esptool. Reconecte a guitarra.'
     prepare(progress)
     cli = cli_path()
     if not cli:

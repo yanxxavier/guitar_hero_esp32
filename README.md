@@ -4,6 +4,8 @@ Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/
 
 ## Aplicativo desktop — Linux e Windows
 
+**[Baixar versão beta em Releases](https://github.com/yanxxavier/guitar_hero_esp32/releases)** · **[Manual do aplicativo](docs/manual.md)**. Pacotes Linux x64 e Windows x64 incluem Python e dependências; basta extrair a pasta inteira. O repositório privado exige login no GitHub. Manual offline também acompanha os pacotes e fica em **Ajuda → Manual do aplicativo (F1)**.
+
 Guitarra visual com setas, identificação/remapeamento de terminais, testes de duração, configuração inicial do jogo e catálogo online de músicas. Linux: `bash tools/install-desktop.sh`, depois **Guitar Lab** no menu. Windows: `tools/install-desktop.bat` e `tools/start-guitar-lab.bat` (validação real Windows pendente). Não abrir junto com o dashboard. [Instalação, pinagem configurável, limites e testes](docs/aplicativo.md).
 
 O firmware atual v10 continua válido. CONFIG v11 é uma atualização opcional para usar GPIOs novos, nunca gravada automaticamente. Whammy desativado por padrão; usuário confirmou som normal após desativar Whammy SFX. Mapeamento do jogador permanece no Clone Hero. Windows usa saída por teclado e ainda não oferece whammy analógico.

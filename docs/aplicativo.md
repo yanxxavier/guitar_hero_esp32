@@ -4,13 +4,17 @@ O aplicativo substitui a página de bancada por uma janela local. A aba Guitarra
 
 ## Instalação
 
+Para usar sem ambiente de desenvolvimento, prefira os pacotes em [Releases](https://github.com/yanxxavier/guitar_hero_esp32/releases): ZIP Windows x64 e TAR.GZ Linux x64. Extraia a pasta inteira e mantenha `_internal` junto do executável. Leia o [manual ilustrado](manual.md), também incluído como HTML offline e acessível por **Ajuda → Manual do aplicativo (F1)**. O Linux é compilado em Ubuntu22.04/glibc2.35; Windows permanece experimental, sem teste físico e sem eixo whammy.
+
+As instruções abaixo são para executar a partir do código-fonte.
+
 Linux/Zorin: execute `bash tools/install-desktop.sh` na pasta do projeto. Depois abra **Guitar Lab** pelo menu de aplicativos. O instalador usa o ambiente `.venv`; não execute o aplicativo como root. Permissões udev: botão **Configurar permissões do Linux** apresenta o pedido de autenticação do sistema para o script existente.
 
 O script concede acesso da sessão gráfica ativa a uinput, ao dispositivo virtual deste projeto e à serial CH340 VID1a86/PID7523. Não adiciona o usuário ao grupo input nem concede acesso a teclados. Reaplique pelo botão se este computador ainda usar as regras antigas sem a linha da serial.
 
 Em Ubuntu/Zorin, se faltar libxcb-cursor0, o instalador baixa o pacote do repositório do sistema e extrai a biblioteca em `.tools/qt-runtime`, sem instalação global ou sudo. Outras distribuições devem fornecer essa dependência pelo próprio gerenciador de pacotes.
 
-Windows: instale Python 3.10+ de [python.org](https://www.python.org/downloads/windows/), execute `tools/install-desktop.bat` e depois `tools/start-guitar-lab.bat`. Instala dependências em `.venv`, sem evdev no Windows. O instalador e a saída Windows precisam de teste real nessa plataforma; não há executável `.exe` empacotado nesta versão. Se o conversor USB CH340 não aparecer, o botão de driver abre o fabricante WCH; nenhum driver é instalado silenciosamente.
+Windows pelo código-fonte: instale Python 3.10+ de [python.org](https://www.python.org/downloads/windows/), execute `tools/install-desktop.bat` e depois `tools/start-guitar-lab.bat`. Instala dependências em `.venv`, sem evdev no Windows. A saída Windows precisa de teste real nessa plataforma. Se o conversor USB CH340 não aparecer, o botão de driver abre o fabricante WCH; nenhum driver é instalado silenciosamente.
 
 Não abra o antigo dashboard e o aplicativo simultaneamente. Ambos usam a mesma trava de propriedade; a serial também é exclusiva. Fechar o aplicativo encerra a ponte e libera os comandos. Deixe-o aberto durante o jogo. Ao remover o USB, os comandos são liberados e a conexão é tentada novamente enquanto Conectar estiver ativo.
 
@@ -25,6 +29,8 @@ CONFIG v11 aceita GPIO13/14/15/16/17/18/19/21/22/23/25/26/27/32/33, nove entrada
 O botão **Preparar ferramentas de gravação · online** verifica Arduino CLI e o core ESP32. Se faltarem, baixa Arduino CLI1.5.1 oficial para Linux/Windows x86_64, confere SHA256 publicado e instala core2.0.17 numa área do aplicativo, sem substituir core de outro projeto. O botão de gravação também prepara essas ferramentas se necessário. Não grava firmware apenas ao preparar ferramentas. Reutiliza `.tools/bin/arduino-cli` ou PATH quando disponíveis. Placa `esp32:esp32:esp32`. Outras arquiteturas exigem instalação manual. [Arduino CLI](https://docs.arduino.cc/arduino-cli/installation/), [core ESP32](https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html).
 
 O dashboard legado é histórico e espera v10; use o aplicativo para v11/pinagem personalizada. A versão ativa do ESP32 não é alterada pela instalação do aplicativo.
+
+Os pacotes portáteis incluem firmware CONFIGv11 compilado deste repositório, manifesto SHA256 e esptool. A gravação opcional usa esses arquivos sem exigir Arduino/Python externos. O modo código-fonte mantém a preparação Arduino CLI descrita acima. Não são incluídos backups de flash. Compilar/distribuir v11 não comprova gravação ou validação física.
 
 ## Configuração do jogo e whammy
 

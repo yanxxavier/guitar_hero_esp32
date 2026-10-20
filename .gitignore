@@ -12,3 +12,4 @@ __pycache__/
 !.env.example
 # Imagens históricas da bancada (D16), mantidas somente no computador.
 /docs/*.png
+/firmware/prebuilt/
