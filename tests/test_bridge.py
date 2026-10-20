@@ -50,7 +50,7 @@ class BridgeTests(unittest.TestCase):
     def test_close_releases_and_destroys_device(self):
         self.bridge.frame(True)
         self.bridge.close()
-        self.assertEqual(self.device.frames, [1, 0, 0, 0, 0, 0, 0])
+        self.assertEqual(self.device.frames, [1] + [0] * 9)
         self.assertTrue(self.device.closed)
         self.assertIsNone(self.bridge.device)
     def test_permissions_failure_does_not_crash_or_claim_ready(self):
@@ -63,7 +63,7 @@ class BridgeTests(unittest.TestCase):
 
     def test_strum_transitions_preserve_green(self):
         for mask in [1, 3, 1, 3, 1]: self.bridge.frame(mask)
-        self.assertEqual(self.device.codes, [(e.BTN_SOUTH, 1), (e.BTN_EAST, 1), (e.BTN_EAST, 0), (e.BTN_EAST, 1), (e.BTN_EAST, 0)])
+        self.assertEqual(self.device.codes, [(e.BTN_SOUTH, 1), (e.BTN_MODE, 1), (e.BTN_MODE, 0), (e.BTN_MODE, 1), (e.BTN_MODE, 0)])
         self.assertEqual(self.bridge.mask, 1)
 
     def test_timeout_releases_both_buttons(self):
@@ -71,13 +71,13 @@ class BridgeTests(unittest.TestCase):
         self.now = 2
         self.bridge.tick()
         self.assertEqual(self.bridge.mask, 0)
-        self.assertEqual(self.device.codes[-2:], [(e.BTN_SOUTH, 0), (e.BTN_EAST, 0)])
+        self.assertEqual(self.device.codes[-2:], [(e.BTN_SOUTH, 0), (e.BTN_MODE, 0)])
 
     def test_analog_changes_preserve_held_buttons_and_ignore_duplicates(self):
         self.bridge.frame(3, 1000)
         self.bridge.frame(3, 1000)
         self.bridge.frame(3, 4095)
-        self.assertEqual(self.device.codes, [(e.BTN_SOUTH, 1), (e.BTN_EAST, 1), (e.ABS_Z, 1000), (e.ABS_Z, 4095)])
+        self.assertEqual(self.device.codes, [(e.BTN_SOUTH, 1), (e.BTN_MODE, 1), (e.ABS_Z, 1000), (e.ABS_Z, 4095)])
         self.assertEqual(self.bridge.mask, 3)
 
     def test_analog_timeout_and_close_return_to_zero(self):
@@ -106,5 +106,24 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(self.bridge.mask, 0)
         self.assertEqual(self.bridge.whammy, 0)
         self.assertIn((e.BTN_TR, 0), self.device.codes)
+
+    def test_new_commands_and_chord_preserve_frets(self):
+        self.bridge.frame(61, 1000)
+        self.bridge.frame(61 | 256, 1000)
+        self.assertEqual(self.device.codes[-1], (e.BTN_EAST, 1))
+        self.bridge.frame(61 | 2 | 64 | 128, 1000)
+        self.assertTrue(self.bridge.pressed)
+        self.assertIn((e.BTN_START, 1), self.device.codes)
+        self.assertIn((e.BTN_SELECT, 1), self.device.codes)
+        self.assertIn((e.BTN_MODE, 1), self.device.codes)
+        self.bridge.release()
+        self.assertEqual(self.bridge.mask, 0)
+        self.assertEqual(self.bridge.whammy, 0)
+        for code in [e.BTN_EAST, e.BTN_MODE, e.BTN_START, e.BTN_SELECT]:
+            self.assertIn((code, 0), self.device.codes)
+
+    def test_mask_outside_nine_buttons_is_rejected(self):
+        with self.assertRaises(ValueError): self.bridge.frame(512)
+        self.assertEqual(self.device.codes, [])
 
 if __name__ == '__main__': unittest.main()

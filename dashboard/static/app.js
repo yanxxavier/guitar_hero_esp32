@@ -59,10 +59,10 @@ function renderBridge(b){
 if(!b)return;
 $('bridge-pill').textContent=b.ready?'● Controle criado':'○ Acesso pendente';
 $('bridge-pill').className='pill'+(b.ready?'':' off');
-$('virtual-state').textContent=b.ready?('Máscara de botões: '+b.mask):'Indisponível';
+$('virtual-state').textContent=b.ready?(b.active_buttons?.length?b.active_buttons.join(' · '):'Todos soltos'):'Indisponível';
 $('virtual-sent').textContent=b.sent;
-$('virtual-path').textContent=b.event_path?b.event_path+' · cinco cores':'Guitar Lab Virtual Controller · 2 botões';
-$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'Cinco cores → botões independentes. Canais extras em identificação, sem saída para o jogo. Whammy D34 → ABS_Z.':'Aguardando acesso ao /dev/uinput.';
+$('virtual-path').textContent=b.event_path?b.event_path+' · nove comandos':'Guitar Lab Virtual Controller · 9 botões';
+$('bridge-detail').textContent=b.timed_out?'Sem atualização da placa há mais de 1,5 s: saída liberada.':b.error?'Não foi possível abrir o uinput: '+b.error+' · Execute a configuração de permissões documentada no README.':b.ready?'Cinco cores, duas palhetadas, Start e Select habilitados no Linux. Configure cada função no Clone Hero. Whammy disponível.':'Aguardando acesso ao /dev/uinput.';
 try{const pads=Array.from(navigator.getGamepads?.()||[]);const pad=pads.find(p=>p&&p.id.includes('Guitar Lab'));$('gamepad-state').textContent=pad?('Botões ativos: '+pad.buttons.filter(b=>b.pressed).length):'Não detectado';$('gamepad-hint').textContent=pad?pad.id:'Aperte o botão físico com esta página em foco; alguns navegadores não expõem o controle.';}catch(e){$('gamepad-state').textContent='Indisponível';$('gamepad-hint').textContent='Gamepad API não disponível neste navegador.'}
 }
 function render(s){renderAux(s);renderScan(s);last=s;renderBridge(s.bridge);renderFrets(s);

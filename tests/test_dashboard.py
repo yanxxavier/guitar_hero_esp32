@@ -119,13 +119,13 @@ class InputTests(unittest.TestCase):
         self.assertFalse(app.state['scan_mode'])
         self.assertTrue(app.state['frets']['green']['pressed'])
 
-    def test_aux_channels_do_not_inject_game_buttons(self):
+    def test_confirmed_aux_channels_reach_bridge(self):
         from unittest.mock import patch
         with patch.object(app.BRIDGE, 'frame') as frame:
             app.consume('GUITARHERO CHANNELS v10')
             app.consume('STATE 0 1000')
             app.consume('STATE 511 1000')
-            frame.assert_called_with(61, 1000)
+            frame.assert_called_with(511, 1000)
             self.assertTrue(all(c['pressed'] for c in app.state['aux'].values()))
             self.assertTrue(all(c['presses'] == 1 for c in app.state['aux'].values()))
             app.consume('STATE 511 1000')

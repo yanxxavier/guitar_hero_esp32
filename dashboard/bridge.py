@@ -3,13 +3,16 @@ import time
 from evdev import UInput, AbsInfo, ecodes as e
 
 NAME = 'Guitar Lab Virtual Controller'
-BUTTONS = ((1, e.BTN_SOUTH), (2, e.BTN_EAST), (4, e.BTN_NORTH),
-           (8, e.BTN_WEST), (16, e.BTN_TL), (32, e.BTN_TR))
+BUTTONS = ((1, e.BTN_SOUTH), (2, e.BTN_MODE), (4, e.BTN_NORTH),
+           (8, e.BTN_WEST), (16, e.BTN_TL), (32, e.BTN_TR),
+           (64, e.BTN_START), (128, e.BTN_SELECT), (256, e.BTN_EAST))
+BUTTON_NAMES = {1: "Verde", 2: "Palheta ↑", 4: "Vermelho", 8: "Amarelo",
+                16: "Azul", 32: "Laranja", 64: "Start", 128: "Select", 256: "Palheta ↓"}
 
 
 def make_device():
     # Generic gamepad capabilities help SDL identify the device as a controller.
-    # D21/18/16/17/15 send five frets; BTN_EAST reserved for historical strum.
+    # D21/18/16/17/15 send five frets; D14 up MODE, D27 down EAST, D13 START, D26 SELECT.
     caps = {e.EV_KEY: [e.BTN_SOUTH, e.BTN_EAST, e.BTN_NORTH, e.BTN_WEST,
                        e.BTN_TL, e.BTN_TR, e.BTN_SELECT, e.BTN_START, e.BTN_MODE],
             e.EV_ABS: [(e.ABS_X, AbsInfo(0, -32768, 32767, 0, 128, 0)),
@@ -69,7 +72,7 @@ class Bridge:
             self.next_retry = self.clock() + 2
 
     def frame(self, mask, whammy=0):
-        if not isinstance(mask, int) or not 0 <= mask <= 63:
+        if not isinstance(mask, int) or not 0 <= mask <= 511:
             raise ValueError('Invalid input mask')
         if type(whammy) is not int or not 0 <= whammy <= 4095:
             raise ValueError("Invalid whammy value")
@@ -79,7 +82,7 @@ class Bridge:
 
     def tick(self):
         self.ensure()
-        # Firmware v8 emits a state every 250ms, including while held.
+        # Firmware v10 emits a state every 250ms, including while held.
         if self.last_frame is not None and self.clock() - self.last_frame > 1.5:
             self.send(0)
             self.timed_out = True
@@ -108,6 +111,7 @@ class Bridge:
     def snapshot(self):
         device = getattr(self.device, 'device', None)
         return dict(ready=self.device is not None, name=NAME, button='BTN_SOUTH',
-                    pressed=self.pressed, strum_pressed=bool(self.mask & 2), mask=self.mask, sent=self.sent, error=self.error,
+                    pressed=self.pressed, strum_pressed=bool(self.mask & 256), mask=self.mask, sent=self.sent, error=self.error,
                     timed_out=self.timed_out, event_path=getattr(device, 'path', None),
-                    firmware_required='FRETS v8', whammy=self.whammy, axis='ABS_Z')
+                    firmware_required='CHANNELS v10', whammy=self.whammy, axis='ABS_Z',
+                    active_buttons=[name for bit, name in BUTTON_NAMES.items() if self.mask & bit])

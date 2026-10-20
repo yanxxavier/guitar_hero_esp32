@@ -97,8 +97,8 @@ def consume(line):
                 state['whammy_min'] = raw if state['whammy_min'] is None else min(raw, state['whammy_min'])
                 state['whammy_max'] = raw if state['whammy_max'] is None else max(raw, state['whammy_max'])
             state['last_frame'] = time.time()
-            # Unassigned auxiliary channels are observed only, never injected into the game.
-            BRIDGE.frame(mask & 61 if state['aux_enabled'] else mask, raw if raw is not None else 0)
+            # v10 channels now have confirmed functions and independent virtual buttons.
+            BRIDGE.frame(mask, raw if raw is not None else 0)
             if state['aux_enabled']:
                 for pin, bit in AUX_CHANNELS:
                     channel = state['aux'][str(pin)]
@@ -242,7 +242,7 @@ def bridge_worker():
             was_ready = BRIDGE.device is not None
             BRIDGE.tick()
             if not was_ready and BRIDGE.device is not None:
-                event('bridge', 'Controle virtual criado · Green BTN_SOUTH / Palhetada BTN_EAST')
+                event('bridge', 'Controle virtual criado · nove comandos e whammy disponíveis')
 
 
 def stop(*_):

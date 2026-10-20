@@ -31,3 +31,6 @@ A correspondência física foi concluída; isso substitui a pendência de identi
 
 ## Inversão solicitada em20/10/2026
 Usuário pediu trocar funções de cima/baixo: **CIMA D14, BAIXO D27**. StartD13 e SelectD26 permanecem. Firmware CHANNELS v10 transmite canais brutos; sem nova gravação ou troca de bits. Dashboard/logs/ordem visual atualizados. Testes físicos anteriores referem-se à orientação antiga; conferir nova orientação no painel. Extras continuam sem saída para jogo.
+
+## Habilitação para primeira gameplay —20/10
+Ponte agora envia os nove comandos, sem filtro mask&61. CimaD14→BTN_MODE, baixoD27→BTN_EAST, StartD13→BTN_START, SelectD26→BTN_SELECT. Firmware v10 inalterado. Esta atualização substitui pendências de habilitar extras nos registros anteriores. Testar mapeamento no jogo; ver primeira-gameplay.md.
