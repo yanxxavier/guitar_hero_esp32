@@ -1,6 +1,7 @@
 import configparser
 import io
 import tempfile
+import sys
 import unittest
 import zipfile
 from pathlib import Path
@@ -132,5 +133,15 @@ class DesktopUiTests(unittest.TestCase):
                 w.check_all();self.assertEqual(w.songs_table.item(0,0).checkState(),Qt.CheckState.Checked)
                 self.assertIsNone(w.engine.thread)
             finally:w.close()
+
+@unittest.skipUnless(sys.platform=='win32','ABI de entrada exclusiva do Windows')
+class WindowsAbiTests(unittest.TestCase):
+    def test_sendinput_structure_matches_windows_abi_without_sending_keys(self):
+        import ctypes
+        from desktop.windows_output import WindowsOutput
+        output=WindowsOutput()
+        self.assertEqual(ctypes.sizeof(output.INPUT),40 if ctypes.sizeof(ctypes.c_void_p)==8 else 28)
+        self.assertEqual(output.mask,0)
+        output._send(0)  # No changes and therefore no SendInput calls.
 
 if __name__=='__main__':unittest.main()

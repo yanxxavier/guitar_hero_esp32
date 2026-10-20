@@ -37,6 +37,7 @@ class Engine:
                           mask=0, raw=0, edge_seq=0, last_pin=None, port='',
                           counts=[0]*9, holds=[0.0]*9, since=[None]*9, logs=[], output={},
                           profile=copy.deepcopy(profile), reported_pins=self.reported[:], configured=False)
+        self.state['profile_revision'] = 0
 
     def log(self, message):
         self.state['logs'] = (self.state['logs'] + [time.strftime('%H:%M:%S') + '  ' + message])[-100:]
@@ -68,8 +69,10 @@ class Engine:
                 raise ValueError('Esse GPIO exige o firmware configurável v11. Instale-o pela aba Configuração.')
         self.commands.put(('profile', copy.deepcopy(profile)))
         if not (self.thread and self.thread.is_alive()):
-            self.profile = copy.deepcopy(profile)
-            config.save(self.profile)
+            with self.lock:
+                self.profile = copy.deepcopy(profile)
+                config.save(self.profile)
+                self.state['profile_revision'] += 1
 
     def consume(self, line):
         if line.startswith('GUITARHERO '):
@@ -88,6 +91,7 @@ class Engine:
                 self.profile = self.pending[0]
                 self.pending = None
                 config.save(self.profile)
+                self.state['profile_revision'] += 1
                 self.log('Pinagem gravada e confirmada pelo ESP32.')
             return
         match = re.fullmatch(r'STATE (\d{1,3}) (\d{1,4})', line)
@@ -170,6 +174,7 @@ class Engine:
                                         self.output.release()
                                         self.profile = profile
                                         config.save(profile)
+                                        self.state['profile_revision'] += 1
                                         self.log('Perfil atualizado.')
                                     else:
                                         self.state['error'] = 'GPIO novo exige firmware configurável v11.'

@@ -102,6 +102,7 @@ class Window(QMainWindow):
         self.pool=ThreadPoolExecutor(max_workers=2)
         self.signals=Signals();self.signals.done.connect(self.task_done);self.signals.progress.connect(self.message)
         self.callbacks={};self.busy=set();self.selected=0;self.learning=None;self.edge=0;self.rows=[];self.page=1
+        self.revision=0
         self.setWindowTitle('Guitar Lab '+__version__);self.resize(1160,820)
         base=QWidget();layout=QVBoxLayout(base);layout.setContentsMargins(24,18,24,14);layout.setSpacing(14)
         heading=QHBoxLayout();title=QLabel('GUITAR LAB');title.setStyleSheet('font-size:24px;font-weight:700;color:#67e8a4')
@@ -269,7 +270,7 @@ class Window(QMainWindow):
         profile=copy.deepcopy(self.profile)
         profile.update({k:v.text().strip() for k,v in self.fields.items()})
         profile.update(whammy_sfx=self.sfx.isChecked(),auto_connect=self.auto.isChecked(),port=self.port.currentData() or '')
-        try:self.engine.apply(profile);self.message('Preferências salvas.')
+        try:self.engine.apply(profile);self.message('Salvando preferências…')
         except Exception as e:self.fail(e)
 
     def prepare_game(self):
@@ -296,6 +297,7 @@ class Window(QMainWindow):
         self.task('permissions',run)
 
     def flash(self):
+        if self.busy.intersection({'tools','firmware'}):return self.message('Aguarde a preparação ou gravação em andamento.')
         port=self.port.currentData() or self.engine.snapshot().get('port')
         if not port:return self.fail(ValueError('Selecione a porta do ESP32.'))
         answer=QMessageBox.question(self,'Atualizar ESP32','Substituir o firmware pelo CONFIG v11?\nA pinagem inicial será a atual do projeto; depois você poderá alterá-la na tela. Se necessário, as ferramentas oficiais serão baixadas primeiro. Não remova o USB.')
@@ -304,6 +306,7 @@ class Window(QMainWindow):
         self.task('firmware',lambda:firmware.upload(port,self.signals.progress.emit))
 
     def prepare_tools(self):
+        if self.busy.intersection({'tools','firmware'}):return self.message('Aguarde a preparação ou gravação em andamento.')
         self.task('tools',lambda:firmware.prepare(self.signals.progress.emit))
 
     def search_music(self):
@@ -358,6 +361,10 @@ class Window(QMainWindow):
 
     def refresh(self):
         state=self.engine.snapshot();self.profile=state['profile']
+        if state['profile_revision']!=self.revision:
+            self.revision=state['profile_revision']
+            self.pin.setCurrentIndex(self.pin.findData(self.profile['pins'][self.selected]))
+            self.message('Perfil salvo. Pinagem e preferências atualizadas.')
         self.guitar.mask=state['mask'];self.guitar.pins=self.profile['pins'];self.guitar.update()
         output=state['output'];self.status.setText(state['status'])
         text=(state['port']+' · ' if state['port'] else '')+('Saída pronta' if output.get('ready') else 'Saída aguardando')
