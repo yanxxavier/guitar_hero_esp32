@@ -256,6 +256,10 @@ def terminate(*_):
 
 
 if __name__ == '__main__':
+    sys.path.insert(0, str(PROJECT))
+    from desktop.ownership import Ownership
+    owner = Ownership().acquire()
+    atexit.register(owner.close)
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', default=PORT)
     parser.add_argument('--http-port', type=int, default=8765)

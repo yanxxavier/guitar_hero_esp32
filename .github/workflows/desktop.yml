@@ -1,0 +1,41 @@
+name: Desktop checks and optional packages
+on:
+  push:
+    paths: ['desktop/**', 'tests/test_desktop.py', 'requirements*.txt', '.github/workflows/desktop.yml']
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Build downloadable desktop packages
+        type: boolean
+        default: true
+permissions:
+  contents: read
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-desktop.txt
+      - run: python -m unittest discover -s tests -p test_desktop.py -v
+      - name: Construct the desktop interface without hardware
+        run: python -c "from PySide6.QtWidgets import QApplication; from desktop.app import Window; a=QApplication([]); w=Window(auto=False); assert w.tabs.count()==4; w.close()"
+      - if: runner.os == 'Linux'
+        run: python -m unittest discover -s tests -v
+      - if: github.event_name == 'workflow_dispatch' && inputs.package
+        run: python -m pip install pyinstaller
+      - if: github.event_name == 'workflow_dispatch' && inputs.package
+        run: python -m PyInstaller --noconfirm --clean --onedir --windowed --name GuitarLab --add-data "docs:docs" --add-data "firmware:firmware" --add-data "tools/setup-permissions.sh:tools" run_guitar_lab.py
+      - if: github.event_name == 'workflow_dispatch' && inputs.package
+        uses: actions/upload-artifact@v4
+        with:
+          name: GuitarLab-${{ runner.os }}
+          path: dist/GuitarLab/

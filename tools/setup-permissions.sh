@@ -10,10 +10,12 @@ modprobe uinput
 cat > /etc/udev/rules.d/70-guitar-lab.rules <<'RULES'
 SUBSYSTEM=="misc", KERNEL=="uinput", TAG+="uaccess", OPTIONS+="static_node=uinput"
 SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Guitar Lab Virtual Controller", ENV{ID_INPUT_JOYSTICK}="1", TAG+="uaccess"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", TAG+="uaccess"
 RULES
 udevadm control --reload-rules
 udevadm trigger --action=change --subsystem-match=misc --sysname-match=uinput
 udevadm trigger --action=change --subsystem-match=input
+udevadm trigger --action=change --subsystem-match=tty --sysname-match='ttyUSB*'
 udevadm settle
 echo 'Regras instaladas. A sessão gráfica ativa deve ter acesso ao uinput.'
-echo 'O dashboard tentará criar o controle automaticamente.'
+echo 'Guitar Lab tentará conectar a serial e criar o controle automaticamente.'

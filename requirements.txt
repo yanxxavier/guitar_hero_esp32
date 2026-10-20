@@ -1,2 +1,2 @@
 pyserial==3.5
-evdev-binary==2.0.0
+evdev-binary==2.0.0; sys_platform == 'linux'

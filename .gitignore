@@ -1,6 +1,8 @@
 .venv/
 .tools/
 build/
+dist/
+*.spec
 backups/
 logs/
 __pycache__/
