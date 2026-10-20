@@ -416,7 +416,7 @@ def main():
         assert (ROOT/'docs/manual.md').is_file()
         import tempfile
         with tempfile.TemporaryDirectory() as temp:
-            assert 'data:image/png' in manual.render(Path(temp)/'manual.html').read_text()
+            assert 'data:image/png' in manual.render(Path(temp)/'manual.html').read_text(encoding='utf8')
         import esptool
         if (ROOT/'firmware/prebuilt/manifest.json').exists():firmware.prebuilt_images()
         window.close()

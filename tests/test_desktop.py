@@ -15,7 +15,7 @@ class DesktopTests(unittest.TestCase):
     def test_offline_manual_embeds_all_images_and_version(self):
         from desktop import manual, __version__
         with tempfile.TemporaryDirectory() as temp:
-            result=manual.render(Path(temp)/'manual.html').read_text()
+            result=manual.render(Path(temp)/'manual.html').read_text(encoding='utf8')
             self.assertIn(__version__,result)
             self.assertNotIn('{{VERSION}}',result)
             self.assertNotIn('src="manual-assets/',result)

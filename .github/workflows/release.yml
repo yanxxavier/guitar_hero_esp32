@@ -44,7 +44,8 @@ jobs:
         with:
           name: project-firmware-v11
           path: firmware/prebuilt/
-      - run: python -m unittest discover -s tests -p test_desktop.py -v
+      - name: Test desktop and offline manual on each platform
+        run: python -m unittest discover -s tests -p test_desktop.py -v
       - run: python tools/build-release.py
       - name: Test packaged application without hardware
         run: python -c "import os,subprocess; p='dist/GuitarLab/GuitarLab'+('.exe' if os.name=='nt' else ''); subprocess.run([p,'--self-test'],check=True,timeout=60)"
