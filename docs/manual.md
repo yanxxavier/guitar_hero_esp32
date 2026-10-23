@@ -107,30 +107,30 @@ Se o terminal identificado já estiver atribuído a outra função, as duas fun�
 
 No ESP32 deste projeto, a marcação D21 corresponde ao GPIO21. Para mudar a fiação física, desconecte o USB antes de mexer nos fios e reconecte com os botões soltos.
 
-### Mapa inicial deste projeto
+### Mapa atual desta guitarra (23/10/2026)
 
 | Função | Terminal |
 | --- | --- |
-| Verde | D21 |
+| Verde | D16 |
 | Vermelho | D18 |
-| Amarelo | D16 |
-| Azul | D17 |
-| Laranja | D15 |
-| Palheta para cima | D14 |
-| Palheta para baixo | D27 |
+| Amarelo | D26 |
+| Azul | D33 |
+| Laranja | D14 |
+| Palheta para cima | D15 |
+| Palheta para baixo | D12 |
 | Start | D13 |
-| Select / Star Power | D26 |
+| Select / Star Power | D25 |
 | Whammy opcional | D34 |
 
-Os switches normalmente abertos ligam cada GPIO ao GND comum. Mantenha o laranja/D15 solto ao ligar a placa. A falha antiga do azulD17 ainda não foi confirmada como reparada.
+Os switches normalmente abertos ligam cada GPIO ao GND comum. Mantenha as palhetas em D12 e D15 soltas ao ligar ou reiniciar o ESP32: são pinos de boot. O azul foi identificado em D33 nesta montagem; isso não comprova reparo da antiga falha mecânica do D17.
 
 ### Quando o firmware v11 é necessário
 
-O firmware v10 já permite trocar funções entre os nove terminais do mapa inicial. Para ler um GPIO novo, como D25 ou D32, use o firmware configurável v11.
+O firmware v10 era da montagem anterior e lia nove terminais fixos. A pinagem atual usa CONFIG v11 atualizado, que permite D12 e foi gravado na placa em 23/10. Para escolher outros GPIOs, use a lista permitida abaixo.
 
 Na aba **Configuração**, selecione a porta correta e acione **Instalar firmware configurável v11**. Leia a confirmação antes de continuar: essa ação substitui o firmware da placa. Os pacotes da release incluem as imagens compiladas e o gravador; preparar as ferramentas não grava a placa. Mantenha o USB conectado durante a gravação e depois reconecte pela aba Guitarra.
 
-GPIOs disponíveis no v11: D13, D14, D15, D16, D17, D18, D19, D21, D22, D23, D25, D26, D27, D32 e D33. Escolha nove terminais diferentes. A mudança só é confirmada no perfil depois da resposta do ESP32. O v11 foi compilado e incluído para teste; a gravação e a nova pinagem ainda precisam de validação física.
+GPIOs disponíveis nesta versão do v11: D12, D13, D14, D15, D16, D17, D18, D19, D21, D22, D23, D25, D26, D27, D32 e D33. Escolha nove terminais diferentes. A mudança só é confirmada no perfil depois da resposta do ESP32. A gravação e persistência da pinagem atual foram verificadas na placa; uso completo no aplicativo e jogo deve ser testado separadamente.
 
 ## 6. Preparar o Clone Hero
 

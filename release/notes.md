@@ -1,6 +1,6 @@
-# Guitar Lab 0.1.0 beta 1
+# Guitar Lab 0.1.0 beta 2
 
-Aplicativo para configurar e testar a guitarra ESP32 por cabo, com guitarra visual e setas, identificação/remapeamento de terminais, configuração inicial do Clone Hero e busca online de músicas.
+Atualiza o Guitar Lab e o firmware CONFIG v11 para a nova pinagem da guitarra por cabo. Inclui D12 como entrada configurável e mantém o manual ilustrado/offline, configuração do Clone Hero e busca de músicas.
 
 ## Downloads
 
@@ -13,11 +13,11 @@ Mantenha a pasta `_internal` junto do executável. Os pacotes incluem o runtime 
 
 ## Estado desta beta
 
-Linux: conexão real e botão verde na janela confirmados no Zorin. Linux e Windows: testes automáticos de lógica/interface/ABI e inicialização dos executáveis empacotados.
+Linux: nove entradas identificadas por três apertos/solturas na leitura direta do ESP32. O firmware v11 atualizado foi gravado, confirmou e persistiu o mapa D16/D18/D26/D33/D14/D15/D12/D13/D25, na ordem Verde/Vermelho/Amarelo/Azul/Laranja/Cima/Baixo/Start/Select. Usuário confirmou que o teste visual no Guitar Lab deu certo. Linux e Windows: testes automáticos de código e abertura dos executáveis empacotados. Uma partida completa com esta pinagem ainda precisa de validação específica.
 
-Windows ainda precisa de teste com a guitarra física/ROG Ally. A saída usa as teclas A/S/J/K/L, ↑/↓, Enter e H, somente com Clone Hero em primeiro plano. Whammy analógico não está disponível no Windows. Demais entradas/remapeamento e partida completa pelo aplicativo ainda precisam de validação física.
+Windows ainda precisa de teste com a guitarra física/ROG Ally. A saída usa as teclas A/S/J/K/L, ↑/↓, Enter e H, somente com Clone Hero em primeiro plano. Whammy analógico não está disponível no Windows. Partida completa pelo aplicativo ainda precisa de validação física.
 
-O firmware v10 atual continua compatível. CONFIG v11 incluído é opcional para GPIOs novos; só grava quando o usuário aciona a opção e confirma. O firmware foi compilado do código do projeto; sua gravação/pinagem configurável ainda está em teste.
+CONFIG v11 incluído aceita D12 e já foi gravado nesta guitarra por solicitação do usuário. Em novas instalações, a atualização só acontece quando acionada e confirmada. D12 e D15 são pinos de boot; mantenha os botões ligados a eles soltos ao ligar/reiniciar. PINSCAN foi diagnóstico temporário, substituído pelo firmware da guitarra após o mapeamento. O azul D33 respondeu no diagnóstico; a falha mecânica histórica no azul não foi declarada resolvida.
 
 Linux: Ubuntu22.04+/glibc2.35 ou mais recente, x86_64. Windows:10/11 x64. Pacotes beta sem assinatura de editor.
 

@@ -1,4 +1,8 @@
-# Estado atual — 15/10/2026
+# Estado atual — 23/10/2026
+
+Após troca de todas as portas pelo usuário, PINSCAN temporário identificou os GPIOs de nove funções: Verde16, Vermelho18, Amarelo26, Azul33, Laranja14, cima15, baixo12, Start13, Select25. O vermelho noD2 não respondia; o usuário moveu o fio paraD18, onde três pares de transições foram observados. CONFIGv11 atualizado para aceitarD12 foi gravado com hash verificado e persistiu `PINS 16,18,26,33,14,15,12,13,25`; perfil do aplicativo salvo. D12/D15 soltos no boot. Usuário confirmou que o teste visual no Guitar Lab deu certo; partida completa com esta pinagem ainda pendente. A antiga falha mecânica do azul não foi declarada resolvida. Código do scanner em `firmware/identificar_todos`, sem produção de comandos para jogo.
+
+Os registros abaixo são históricos.
 
 Firmware v5: Green D15/GND e palhetada D13/GND, ambos validados no jogo por relato. B10K com extremos 3V3/GND e cursor D34 confirmado pelo usuário; leitura ADC e eixo ABS_Z implementados, teste de movimento/calibração/mapeamento ainda pendente. Ver [whammy](whammy.md). Completar bancada Zorin; Ally antes da construção impressa.
 

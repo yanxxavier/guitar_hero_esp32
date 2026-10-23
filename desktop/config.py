@@ -8,7 +8,7 @@ ACTIONS = ('green', 'red', 'yellow', 'blue', 'orange', 'up', 'down', 'start', 's
 LABELS = ('Verde', 'Vermelho', 'Amarelo', 'Azul', 'Laranja', 'Palheta ↑', 'Palheta ↓', 'Start', 'Select / Star Power')
 BITS = (1, 4, 8, 16, 32, 2, 256, 64, 128)
 DEFAULT_PINS = (21, 18, 16, 17, 15, 14, 27, 13, 26)
-GPIO = (13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33)
+GPIO = (12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33)
 
 def data_dir():
     if sys.platform == 'win32':

@@ -11,7 +11,8 @@ uint32_t changedAt[N], lastReport, lastSample;
 uint16_t whammy, reportedWhammy;
 String command;
 bool validPin(int p) {
-  const uint8_t allowed[] = {13,14,15,16,17,18,19,21,22,23,25,26,27,32,33};
+  // GPIO12 is a boot strap; keep its switch released when the board resets.
+  const uint8_t allowed[] = {12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33};
   for (uint8_t a : allowed) if (p == a) return true;
   return false;
 }

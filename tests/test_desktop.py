@@ -12,6 +12,12 @@ from desktop import config, game, music
 from desktop.engine import Engine
 
 class DesktopTests(unittest.TestCase):
+    def test_confirmed_gpio12_map_is_accepted_without_allowing_gpio2(self):
+        confirmed=[16,18,26,33,14,15,12,13,25]
+        self.assertEqual(config.validate_pins(confirmed),confirmed)
+        with self.assertRaises(ValueError):
+            config.validate_pins([16,18,26,33,14,15,2,13,25])
+
     def test_offline_manual_embeds_all_images_and_version(self):
         from desktop import manual, __version__
         with tempfile.TemporaryDirectory() as temp:

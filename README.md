@@ -8,9 +8,25 @@ Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/
 
 Guitarra visual com setas, identificação/remapeamento de terminais, testes de duração, configuração inicial do jogo e catálogo online de músicas. Linux: `bash tools/install-desktop.sh`, depois **Guitar Lab** no menu. Windows: `tools/install-desktop.bat` e `tools/start-guitar-lab.bat` (validação real Windows pendente). Não abrir junto com o dashboard. [Instalação, pinagem configurável, limites e testes](docs/aplicativo.md).
 
-O firmware atual v10 continua válido. CONFIG v11 é uma atualização opcional para usar GPIOs novos, nunca gravada automaticamente. Whammy desativado por padrão; usuário confirmou som normal após desativar Whammy SFX. Mapeamento do jogador permanece no Clone Hero. Windows usa saída por teclado e ainda não oferece whammy analógico.
+Na montagem de 23/10, o ESP32 usa CONFIG v11 com GPIO12 liberado e pinagem persistida após identificação física. Whammy desativado por padrão; usuário confirmou som normal após desativar Whammy SFX. Mapeamento do jogador permanece no Clone Hero. Windows usa saída por teclado e ainda não oferece whammy analógico.
 
-## Configuração atual — firmware v10, canais adicionais em identificação
+## Pinagem atual — 23/10/2026
+
+| Controle | GPIO |
+| --- | ---: |
+| Verde | D16 |
+| Vermelho | D18 |
+| Amarelo | D26 |
+| Azul | D33 |
+| Laranja | D14 |
+| Palheta para cima | D15 |
+| Palheta para baixo | D12 |
+| Start | D13 |
+| Select | D25 |
+
+Os nove sinais foram identificados com três apertos/solturas cada no PINSCAN. O vermelho só respondeu depois de mover seu fio de D2 para D18. CONFIG v11 confirmou e persistiu esta ordem. Mantenha palhetada de baixo/D12 e cima/D15 soltas ao ligar/reiniciar por serem pinos de boot. A validação visual no app e no jogo é uma etapa separada. O mapa v10 abaixo é histórico.
+
+## Histórico — firmware v10, canais adicionais em identificação
 
 Cinco cores mantidas em D21/D18/D16/D17/D15; azul apresenta falha mesmo sem botão impresso, segundo usuário, ainda sem reparo. Mapa físico dos extras confirmado: **cima D14, baixo D27, Start D13, Select/Star Power D26**. Dashboard mostra funções e contadores individuais. Em20/10 a ponte foi habilitada para os nove comandos; mapear no Clone Hero e testar a primeira música. Ver [primeira gameplay](docs/primeira-gameplay.md). Ver [ligação e protocolo](docs/canais-adicionais.md). Whammy D34 preservado; laranja D15 solto no boot.
 
