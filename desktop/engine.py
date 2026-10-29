@@ -27,6 +27,8 @@ def output_factory():
 class Engine:
     def __init__(self, profile):
         self.profile = copy.deepcopy(profile)
+        if 'tilt_pin' not in self.profile:
+            self.profile['tilt_pin'] = config.DEFAULT_TILT_PIN
         self.profile_initialized = (config.data_dir() / 'profile.json').is_file()
         self.lock = threading.RLock()
         self.stop_event = threading.Event()
@@ -34,13 +36,17 @@ class Engine:
         self.thread = None
         self.output = None
         self.raw_mask = 0
+        self.raw_tilt = None
         self.reported = list(config.DEFAULT_PINS)
+        self.reported_tilt = self.profile['tilt_pin']
         self.last_frame = None
         self.pending = None
+        self.pending_tilt = None
         self.state = dict(connected=False, firmware='', status='Desconectado', error='',
-                          mask=0, raw=0, edge_seq=0, last_pin=None, port='',
-                          counts=[0]*9, holds=[0.0]*9, since=[None]*9, logs=[], output={},
-                          profile=copy.deepcopy(profile), reported_pins=self.reported[:], configured=False)
+                          mask=0, raw=0, tilt=False, edge_seq=0, last_pin=None, port='',
+                          counts=[0]*10, holds=[0.0]*10, since=[None]*10, logs=[], output={},
+                          profile=copy.deepcopy(self.profile), reported_pins=self.reported[:],
+                          reported_tilt=self.reported_tilt, configured=False)
         self.state['profile_revision'] = 0
 
     def log(self, message):
@@ -68,6 +74,11 @@ class Engine:
 
     def apply(self, profile):
         config.validate_pins(profile['pins'])
+        if 'tilt_pin' in profile:
+            config.validate_tilt_pin(profile['tilt_pin'])
+        else:
+            profile = copy.deepcopy(profile)
+            profile['tilt_pin'] = self.profile.get('tilt_pin', config.DEFAULT_TILT_PIN)
         with self.lock:
             if self.state['connected'] and not self.state['configured'] and not set(profile['pins']).issubset(self.reported):
                 raise ValueError('Esse GPIO exige o firmware configurável v11. Instale-o pela aba Configuração.')
@@ -86,25 +97,68 @@ class Engine:
             self.state['firmware'] = line
             self.state['configured'] = 'CONFIG v11' in line
             self.reported = list(config.DEFAULT_PINS)
+            self.raw_tilt = None
             self.log(line)
             return
         if line.startswith('PINS '):
             pins = config.validate_pins([int(s) for s in line[5:].split(',')])
             self.reported = pins
             self.state['reported_pins'] = pins[:]
-            if self.state['configured'] and not self.profile_initialized:
+            if self.state['configured'] and not self.pending and (not self.profile_initialized or not set(self.profile['pins']).issubset(pins)):
                 self.profile['pins'] = pins[:]
                 config.save(self.profile)
                 self.profile_initialized = True
                 self.state['profile_revision'] += 1
                 self.log('Pinagem inicial carregada da configuração salva no ESP32.')
             if self.pending and pins == self.pending[0]['pins']:
-                self.profile = self.pending[0]
+                self.profile['pins'] = self.pending[0]['pins'][:]
+                if not self.pending_tilt:
+                    self.profile = self.pending[0]
                 self.pending = None
                 config.save(self.profile)
                 self.profile_initialized = True
                 self.state['profile_revision'] += 1
                 self.log('Pinagem gravada e confirmada pelo ESP32.')
+            return
+        if line.startswith('TILT '):
+            pin = config.validate_tilt_pin(int(line[5:].strip()))
+            self.reported_tilt = pin
+            self.state['reported_tilt'] = pin
+            if self.state['configured'] and not self.pending_tilt and self.profile.get('tilt_pin') != pin:
+                self.profile['tilt_pin'] = pin
+                config.save(self.profile)
+                self.state['profile_revision'] += 1
+                self.log(f'Inclinação (Tilt) carregada do ESP32 em D{pin}.')
+            if self.pending_tilt and pin == self.pending_tilt[0].get('tilt_pin'):
+                self.profile['tilt_pin'] = pin
+                if not self.pending:
+                    self.profile = self.pending_tilt[0]
+                self.pending_tilt = None
+                config.save(self.profile)
+                self.profile_initialized = True
+                self.state['profile_revision'] += 1
+                self.log(f'Inclinação (Tilt) gravada e confirmada pelo ESP32 em D{pin}.')
+            return
+        tilt_match = re.fullmatch(r'TILT_STATE ([01])', line)
+        if tilt_match and self.state['firmware']:
+            active = tilt_match.group(1) == '1'
+            now = time.monotonic()
+            first_tilt = self.raw_tilt is None
+            if not first_tilt and active != self.raw_tilt:
+                self.state['edge_seq'] += 1
+                self.state['last_pin'] = self.reported_tilt
+            if active and not self.state['tilt']:
+                if not first_tilt:
+                    self.state['counts'][9] += 1
+                self.state['since'][9] = now
+            if not active and self.state['tilt']:
+                start = self.state['since'][9]
+                self.state['holds'][9] = now - start if start else 0
+                self.state['since'][9] = None
+            self.raw_tilt = active
+            self.state['tilt'] = active
+            if self.output and hasattr(self.output, 'set_tilt'):
+                self.output.set_tilt(active and not self.pending and not self.pending_tilt)
             return
         match = re.fullmatch(r'STATE (\d{1,3}) (\d{1,4})', line)
         if not match or not self.state['firmware']:
@@ -153,12 +207,14 @@ class Engine:
                     self.stop_event.wait(1)
                     continue
                 try:
-                    with serial.Serial(selected, 115200, timeout=.03, write_timeout=1, exclusive=sys.platform!='win32') as dev:
+                    with serial.Serial(selected, 115200, timeout=.03, write_timeout=1, exclusive=True) as dev:
                         with self.lock:
                             self.state.update(connected=True, firmware='', configured=False, port=selected, status='Identificando ESP32', error='')
                             self.last_frame = None
                             self.raw_mask = 0
+                            self.raw_tilt = None
                             self.pending = None
+                            self.pending_tilt = None
                             self.output = output_factory()
                             if hasattr(self.output, 'ensure'):
                                 self.output.ensure()
@@ -175,13 +231,22 @@ class Engine:
                                     self.consume(line)
                                 while not self.commands.empty():
                                     _, profile = self.commands.get_nowait()
-                                    if self.pending:
+                                    if self.pending or self.pending_tilt:
                                         raise ValueError('Aguarde a confirmação da pinagem anterior.')
-                                    if self.state['configured'] and profile['pins'] != self.reported:
+                                    pins_changed = self.state['configured'] and profile['pins'] != self.reported
+                                    tilt_pin = profile.get('tilt_pin', config.DEFAULT_TILT_PIN)
+                                    tilt_changed = self.state['configured'] and tilt_pin != self.reported_tilt
+                                    if pins_changed or tilt_changed:
                                         self.output.release()
-                                        self.pending = (profile, time.monotonic())
-                                        dev.write(('CFG PINS ' + ','.join(map(str, profile['pins'])) + '\n').encode())
-                                        self.log('Aplicando pinagem no ESP32…')
+                                        now_cmd = time.monotonic()
+                                        if pins_changed:
+                                            self.pending = (profile, now_cmd)
+                                            dev.write(('CFG PINS ' + ','.join(map(str, profile['pins'])) + '\n').encode())
+                                            self.log('Aplicando pinagem no ESP32…')
+                                        if tilt_changed:
+                                            self.pending_tilt = (profile, now_cmd)
+                                            dev.write((f'CFG TILT {tilt_pin}\n').encode())
+                                            self.log(f'Aplicando Inclinação (Tilt) em D{tilt_pin} no ESP32…')
                                     elif set(profile['pins']).issubset(self.reported):
                                         self.output.release()
                                         self.profile = profile
@@ -194,15 +259,18 @@ class Engine:
                                 if self.pending and time.monotonic() - self.pending[1] > 3:
                                     self.pending = None
                                     self.state['error'] = 'ESP32 não confirmou a pinagem; perfil anterior mantido.'
+                                if self.pending_tilt and time.monotonic() - self.pending_tilt[1] > 3:
+                                    self.pending_tilt = None
+                                    self.state['error'] = 'ESP32 não confirmou o pino de Tilt; perfil anterior mantido.'
                                 if self.last_frame is not None and time.monotonic() - self.last_frame > 1.5:
                                     self.output.release()
-                                    self.state.update(mask=0, since=[None]*9, status='Sem dados do ESP32', error='Estado liberado por segurança.')
+                                    self.state.update(mask=0, tilt=False, since=[None]*10, status='Sem dados do ESP32', error='Estado liberado por segurança.')
                                 if self.last_frame is None and time.monotonic() - opened > 8:
                                     raise ValueError('O dispositivo não enviou o protocolo da guitarra. Confira a porta e o firmware.')
                                 self.output.tick()
                 except (OSError, serial.SerialException, ValueError) as exc:
                     with self.lock:
-                        self.state.update(connected=False, mask=0, status='Aguardando conexão', error=str(exc))
+                        self.state.update(connected=False, mask=0, tilt=False, status='Aguardando conexão', error=str(exc))
                         self.log(str(exc))
                     self.stop_event.wait(1)
                 finally:
@@ -210,12 +278,13 @@ class Engine:
                         if self.output:
                             self.output.close()
                             self.output = None
-                        self.state.update(connected=False, mask=0, since=[None]*9)
+                        self.state.update(connected=False, mask=0, tilt=False, since=[None]*10)
                         self.last_frame = None
+                        self.raw_tilt = None
         except RuntimeError as exc:
             with self.lock:
                 self.state.update(error=str(exc), status='Outra instância está usando a guitarra')
         finally:
             owner.close()
             with self.lock:
-                self.state.update(connected=False, mask=0, status='Desconectado')
+                self.state.update(connected=False, mask=0, tilt=False, status='Desconectado')

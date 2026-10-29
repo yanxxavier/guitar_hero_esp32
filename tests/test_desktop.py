@@ -148,6 +148,25 @@ class DesktopTests(unittest.TestCase):
             finally:first.close()
             another=Ownership().acquire();another.close()
 
+    def test_tilt_channel_tracks_state_and_pin_swap(self):
+        from unittest.mock import Mock
+        engine=Engine(config.defaults());engine.output=Mock()
+        engine.consume('GUITARHERO CONFIG v11')
+        engine.consume('PINS 16,21,27,17,18,12,13,4,19')
+        engine.consume('TILT 15')
+        engine.consume('TILT_STATE 0')
+        self.assertFalse(engine.state['tilt'])
+        self.assertEqual(engine.state['counts'][9],0)
+        engine.consume('TILT_STATE 1')
+        self.assertTrue(engine.state['tilt'])
+        self.assertEqual(engine.state['counts'][9],1)
+        engine.output.set_tilt.assert_called_with(True)
+        engine.consume('TILT_STATE 0')
+        self.assertFalse(engine.state['tilt'])
+        pins, tilt = config.swap_with_tilt([16,21,27,17,18,12,13,4,19], 15, 9, 19)
+        self.assertEqual(tilt, 19)
+        self.assertEqual(pins[-1], 15)
+
 class DesktopUiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -163,6 +182,9 @@ class DesktopUiTests(unittest.TestCase):
             w=Window(auto=False)
             try:
                 self.assertEqual(w.tabs.count(),4)
+                self.assertEqual(w.table.rowCount(),10)
+                w.guitar.selected.emit(9)
+                self.assertEqual(w.selected,9);self.assertEqual(w.pin.currentData(),15)
                 w.guitar.selected.emit(3)
                 self.assertEqual(w.selected,3);self.assertEqual(w.pin.currentData(),17)
                 w.show_results([dict(artist='Linkin Park',name='Numb',charter='Neversoft',notesData={})])
@@ -179,5 +201,24 @@ class WindowsAbiTests(unittest.TestCase):
         self.assertEqual(ctypes.sizeof(output.INPUT),40 if ctypes.sizeof(ctypes.c_void_p)==8 else 28)
         self.assertEqual(output.mask,0)
         output._send(0)  # No changes and therefore no SendInput calls.
+
+    def test_tilt_channel_tracks_state_and_pin_swap(self):
+        from unittest.mock import Mock
+        engine=Engine(config.defaults());engine.output=Mock()
+        engine.consume('GUITARHERO CONFIG v11')
+        engine.consume('PINS 16,21,27,17,18,12,13,4,19')
+        engine.consume('TILT 15')
+        engine.consume('TILT_STATE 0')
+        self.assertFalse(engine.state['tilt'])
+        self.assertEqual(engine.state['counts'][9],0)
+        engine.consume('TILT_STATE 1')
+        self.assertTrue(engine.state['tilt'])
+        self.assertEqual(engine.state['counts'][9],1)
+        engine.output.set_tilt.assert_called_with(True)
+        engine.consume('TILT_STATE 0')
+        self.assertFalse(engine.state['tilt'])
+        pins, tilt = config.swap_with_tilt([16,21,27,17,18,12,13,4,19], 15, 9, 19)
+        self.assertEqual(tilt, 19)
+        self.assertEqual(pins[-1], 15)
 
 if __name__=='__main__':unittest.main()

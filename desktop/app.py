@@ -24,7 +24,7 @@ from . import __version__
 from .engine import Engine, ports
 
 ROOT = Path(__file__).resolve().parents[1]
-COLORS = ('#50d890', '#ff666f', '#f5d45d', '#58a6ff', '#ffae54', '#b8c4d6', '#b8c4d6', '#b8c4d6', '#b8c4d6')
+COLORS = ('#50d890', '#ff666f', '#f5d45d', '#58a6ff', '#ffae54', '#b8c4d6', '#b8c4d6', '#b8c4d6', '#b8c4d6', '#ffd166')
 
 class Signals(QObject):
     done = Signal(str, object, object)
@@ -36,7 +36,7 @@ class Guitar(QWidget):
         super().__init__()
         self.setMinimumSize(440, 530)
         self.setAccessibleName('Guitarra visual. Clique numa seta para identificar ou remapear o botão.')
-        self.mask, self.pins, self.active = 0, list(config.DEFAULT_PINS), 0
+        self.mask, self.tilt, self.pins, self.tilt_pin, self.active = 0, False, list(config.DEFAULT_PINS), config.DEFAULT_TILT_PIN, 0
         self.hitboxes = []
 
     def paintEvent(self, event):
@@ -61,15 +61,17 @@ class Guitar(QWidget):
         for x in range(147,180,6):p.drawLine(x,42,x,485)
         for y in range(65,251,35):p.drawLine(140,y,183,y)
         positions = [(161,82),(161,117),(161,152),(161,187),(161,222),
-                     (163,353),(163,387),(119,455),(202,481)]
-        label_y = [82,117,152,187,222,353,387,455,496]
+                     (163,345),(163,379),(119,440),(202,468),(162,508)]
+        label_y = [76,111,146,181,216,336,372,434,470,506]
         self.hitboxes = []
         p.setFont(QFont('Sans',10))
         for i,((x,y),ly) in enumerate(zip(positions,label_y)):
-            on=bool(self.mask & config.BITS[i]); color=QColor(COLORS[i])
+            on = bool(self.tilt) if i == 9 else bool(self.mask & config.BITS[i])
+            color = QColor(COLORS[i])
             p.setPen(QPen(color,3 if i==self.active else 1.4))
             p.setBrush(color if on else QColor('#192232'))
             if i<5:p.drawRoundedRect(QRectF(x-14,y-11,28,22),5,5)
+            elif i==9:p.drawRoundedRect(QRectF(x-12,y-9,24,18),4,4)
             else:p.drawEllipse(QPointF(x,y),9,9)
             p.drawLine(QPointF(x+17,y),QPointF(282,ly));p.drawLine(282,ly,293,ly)
             p.drawLine(288,ly-4,293,ly);p.drawLine(288,ly+4,293,ly)
@@ -77,8 +79,10 @@ class Guitar(QWidget):
             p.setBrush(QColor('#233047') if i==self.active else QColor('#172130'))
             p.drawRoundedRect(rect,5,5)
             p.setPen(QColor('#f4f7fb'))
+            pin_num = self.tilt_pin if i == 9 else self.pins[i]
+            label_text = config.TILT_LABEL if i == 9 else config.LABELS[i].replace(' / Star Power','')
             p.drawText(rect.adjusted(8,0,-4,0),Qt.AlignmentFlag.AlignVCenter,
-                       config.LABELS[i].replace(' / Star Power','')+f' · D{self.pins[i]}')
+                       f'{label_text} · D{pin_num}')
             self.hitboxes.append((rect, i))
         p.setPen(QColor('#8999ae'));p.setFont(QFont('Sans',9))
         p.drawText(QRectF(20,540,435,25),Qt.AlignmentFlag.AlignCenter,'Clique numa seta para selecionar a função.')
@@ -164,12 +168,12 @@ class Window(QMainWindow):
         right.addWidget(self.button('Usar este terminal',self.assign_pin))
         right.addWidget(self.button('Identificar pelo botão físico',self.learn))
         right.addWidget(self.button('Cancelar identificação',self.cancel_learn))
-        note=QLabel('Para identificar: clique acima e aperte somente o botão indicado. Se o terminal já pertence a outra função, as duas trocam de lugar.');note.setWordWrap(True);right.addWidget(note)
-        self.table=QTableWidget(9,3);self.table.setHorizontalHeaderLabels(['Função','Apertos','Segurado'])
+        note=QLabel('Para identificar: clique acima e aperte somente o botão (ou incline a guitarra para o Tilt). Se o terminal já pertence a outra função, as duas trocam de lugar.');note.setWordWrap(True);right.addWidget(note)
+        self.table=QTableWidget(10,3);self.table.setHorizontalHeaderLabels(['Função','Apertos','Segurado'])
         self.table.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.cellClicked.connect(lambda row,col:self.select_action(row))
-        for i,label in enumerate(config.LABELS):
+        for i,label in enumerate(config.ALL_LABELS):
             for j,text in enumerate([label,'0','—']):self.table.setItem(i,j,QTableWidgetItem(text))
         right.addWidget(self.table,1)
         self.whammy=QCheckBox('Whammy físico instalado · D34');self.whammy.setChecked(self.profile['whammy']);self.whammy.toggled.connect(self.change_whammy)
@@ -193,8 +197,8 @@ class Window(QMainWindow):
         box.addWidget(self.button('Salvar caminhos e preferências',self.save_setup))
         box.addWidget(self.button('Aplicar configuração inicial no Clone Hero',self.prepare_game))
         help=QLabel('A configuração inicial mantém as demais opções e salva backup antes de ajustar Whammy SFX. Feche o jogo antes de aplicar.\n'
-                    'Linux: controle virtual com cinco cores, duas palhetadas, Start/Select e eixo analógico opcional.\n'
-                    'Windows: saída por teclado quando Clone Hero está em primeiro plano; mapear A/S/J/K/L, ↑/↓, Enter e H no jogo. '
+                    'Linux: controle virtual com cinco cores, duas palhetadas, Start/Select, eixo de Inclinação (Tilt) separado e whammy opcional.\n'
+                    'Windows: saída por teclado quando Clone Hero está em primeiro plano; mapear A/S/J/K/L, ↑/↓, Enter, H (Select) e T (Star Power / Tilt) no jogo. '
                     'macOS: saída pelas mesmas teclas somente quando Clone Hero está em primeiro plano; o macOS pode solicitar permissão de Automação e Acessibilidade. '
                     'Whammy analógico no Windows e macOS ainda não está disponível.\n'
                     'No jogo, faça o mapeamento pelo menu de controles. O aplicativo configura a guitarra, não altera silenciosamente o perfil do jogador.')
@@ -202,7 +206,7 @@ class Window(QMainWindow):
         if sys.platform.startswith('linux'):box.addWidget(self.button('Configurar permissões do Linux…',self.permissions))
         else:box.addWidget(self.button('Driver USB CH340 · site oficial WCH',lambda:QDesktopServices.openUrl(QUrl('https://www.wch-ic.com/downloads/CH341SER_EXE.html'))))
         box.addWidget(QLabel('GPIO novo: firmware configurável v11 (opcional)'))
-        fw=QLabel('O v10 atual já permite trocar funções entre os nove terminais conectados. O v11 permite escolher outros GPIOs da lista e grava a pinagem no ESP32. '
+        fw=QLabel('O v10 atual já permite trocar funções entre os nove terminais conectados. O v11 permite escolher outros GPIOs da lista e grava a pinagem e o Tilt no ESP32. '
                   'O aplicativo desconecta antes de gravar. Mantenha todos os botões soltos e não remova o USB durante a gravação. GPIO15 deve ficar solto no boot.')
         fw.setWordWrap(True);box.addWidget(fw)
         box.addWidget(self.button('Preparar ferramentas de gravação · online',self.prepare_tools))
@@ -244,21 +248,35 @@ class Window(QMainWindow):
 
     def select_action(self,index):
         self.selected=index;self.guitar.active=index;self.guitar.update()
-        self.action_title.setText(config.LABELS[index]);self.pin.setCurrentIndex(self.pin.findData(self.profile['pins'][index]))
+        self.action_title.setText(config.ALL_LABELS[index])
+        current_pin = self.profile.get('tilt_pin', config.DEFAULT_TILT_PIN) if index == 9 else self.profile['pins'][index]
+        self.pin.setCurrentIndex(self.pin.findData(current_pin))
         self.table.selectRow(index) if hasattr(self,'table') else None
 
     def assign_pin(self):
-        self.commit_pins(config.swap_pin(self.profile['pins'],self.selected,self.pin.currentData()))
+        pins, tilt_pin = config.swap_with_tilt(
+            self.profile['pins'],
+            self.profile.get('tilt_pin', config.DEFAULT_TILT_PIN),
+            self.selected,
+            self.pin.currentData(),
+        )
+        self.commit_pins(pins, tilt_pin)
 
-    def commit_pins(self,pins):
+    def commit_pins(self,pins,tilt_pin=None):
         profile=copy.deepcopy(self.profile);profile['pins']=pins
+        if tilt_pin is not None:
+            profile['tilt_pin']=tilt_pin
         try:self.engine.apply(profile);self.message('Aplicando pinagem… aguarde a confirmação. Mantenha os botões soltos.')
         except Exception as e:self.fail(e)
 
     def learn(self):
         state=self.engine.snapshot()
         if not state['connected'] or not state['firmware']:return self.fail(ValueError('Conecte a guitarra antes de identificar.'))
-        self.learning=(self.selected,state['edge_seq']);self.message('Aperte somente: '+config.LABELS[self.selected]+'.')
+        self.learning=(self.selected,state['edge_seq'])
+        if self.selected == 9:
+            self.message('Incline a guitarra (ou acione o sensor Tilt) para identificar o terminal.')
+        else:
+            self.message('Aperte somente: '+config.ALL_LABELS[self.selected]+'.')
 
     def cancel_learn(self):self.learning=None;self.message('Identificação cancelada.')
 
@@ -375,21 +393,36 @@ class Window(QMainWindow):
         state=self.engine.snapshot();self.profile=state['profile']
         if state['profile_revision']!=self.revision:
             self.revision=state['profile_revision']
-            self.pin.setCurrentIndex(self.pin.findData(self.profile['pins'][self.selected]))
+            current_pin = self.profile.get('tilt_pin', config.DEFAULT_TILT_PIN) if self.selected == 9 else self.profile['pins'][self.selected]
+            self.pin.setCurrentIndex(self.pin.findData(current_pin))
             self.message('Perfil salvo. Pinagem e preferências atualizadas.')
-        self.guitar.mask=state['mask'];self.guitar.pins=self.profile['pins'];self.guitar.update()
+        self.guitar.mask=state['mask']
+        self.guitar.tilt=state.get('tilt', False)
+        self.guitar.pins=self.profile['pins']
+        self.guitar.tilt_pin=self.profile.get('tilt_pin', config.DEFAULT_TILT_PIN)
+        self.guitar.update()
         output=state['output'];self.status.setText(state['status'])
         text=(state['port']+' · ' if state['port'] else '')+('Saída pronta' if output.get('ready') else 'Saída aguardando')
         if state['error'] or output.get('error'):text+=' · '+(state['error'] or output.get('error'))
         self.connection_detail.setText(text)
         self.analog.setEnabled(self.profile['whammy']);self.analog.setValue(state['raw'] if self.profile['whammy'] else 0)
         self.analog.setFormat('%v / 4095' if self.profile['whammy'] else 'Whammy desativado')
-        for i,bit in enumerate(config.BITS):
+        for i in range(10):
             duration=time.monotonic()-state['since'][i] if state['since'][i] else state['holds'][i]
             self.table.item(i,1).setText(str(state['counts'][i]));self.table.item(i,2).setText(f'{duration:.1f}s' if duration else '—')
-        self.action_state.setText('PRESSIONADO' if state['mask']&config.BITS[self.selected] else 'Solto' if state['connected'] else 'Desconectado')
+        if self.selected == 9:
+            self.action_state.setText('ACIONADO (INCLINADO)' if state.get('tilt') else 'Solto' if state['connected'] else 'Desconectado')
+        else:
+            self.action_state.setText('PRESSIONADO' if state['mask']&config.BITS[self.selected] else 'Solto' if state['connected'] else 'Desconectado')
         if self.learning and state['edge_seq']>self.learning[1] and state['last_pin'] is not None:
-            index,_=self.learning;self.learning=None;self.commit_pins(config.swap_pin(self.profile['pins'],index,state['last_pin']))
+            index,_=self.learning;self.learning=None
+            pins, tilt_pin = config.swap_with_tilt(
+                self.profile['pins'],
+                self.profile.get('tilt_pin', config.DEFAULT_TILT_PIN),
+                index,
+                state['last_pin'],
+            )
+            self.commit_pins(pins, tilt_pin)
         logs='\n'.join(state['logs'])
         if self.logs.toPlainText()!=logs:self.logs.setPlainText(logs)
 

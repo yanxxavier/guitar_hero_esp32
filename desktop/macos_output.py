@@ -8,6 +8,7 @@ from .config import BITS
 
 # A/S/J/K/L, Up, Down, Return, H using macOS virtual key codes.
 KEYS = (0, 1, 38, 40, 37, 126, 125, 36, 4)
+TILT_KEY = 17  # 'T' key on macOS for Tilt / Star Power
 FOREGROUND_SCRIPT = (
     'tell application "System Events" to get name of '
     'first application process whose frontmost is true'
@@ -18,6 +19,8 @@ class MacOSOutput:
     def __init__(self):
         self.mask = 0
         self.desired = 0
+        self.tilt = False
+        self.desired_tilt = False
         self.sent = 0
         self.error = None
         self.frontmost = False
@@ -70,7 +73,7 @@ class MacOSOutput:
                     self.error = f"Não consegui detectar o aplicativo em primeiro plano: {exc}"
             self._closed.wait(.25)
 
-    def _send(self, mask):
+    def _send(self, mask, tilt=False):
         if not self._cg:
             return
         for bit, key in zip(BITS, KEYS):
@@ -84,23 +87,35 @@ class MacOSOutput:
             self._cf.CFRelease(event)
             self.mask = self.mask | bit if mask & bit else self.mask & ~bit
             self.sent += 1
+        if bool(self.tilt) != bool(tilt):
+            event = self._cg.CGEventCreateKeyboardEvent(None, TILT_KEY, bool(tilt))
+            if event:
+                self._cg.CGEventPost(0, event)
+                self._cf.CFRelease(event)
+                self.tilt = bool(tilt)
+                self.sent += 1
 
     def frame(self, mask, whammy=0):
         self.desired = mask
         self.tick()
 
+    def set_tilt(self, active):
+        self.desired_tilt = bool(active)
+        self.tick()
+
     def tick(self):
         with self._lock:
             allowed = self.frontmost
-        self._send(self.desired if allowed else 0)
+        self._send(self.desired if allowed else 0, self.desired_tilt if allowed else False)
 
     def release(self):
         self.desired = 0
-        self._send(0)
+        self.desired_tilt = False
+        self._send(0, False)
 
     def snapshot(self):
         return dict(
-            ready=self._cg is not None, mask=self.mask, whammy=0,
+            ready=self._cg is not None, mask=self.mask, tilt=self.tilt, whammy=0,
             error=self.error, sent=self.sent,
             mode="Teclado · somente Clone Hero em primeiro plano",
             event_path=None,

@@ -25,7 +25,7 @@ def main():
     args.log.parent.mkdir(parents=True,exist_ok=True)
     owner=Ownership().acquire()
     try:
-        with serial.Serial(args.port,115200,timeout=.1,exclusive=sys.platform!='win32') as dev,args.log.open('a',encoding='utf8') as out:
+        with serial.Serial(args.port,115200,timeout=.1,exclusive=True) as dev,args.log.open('a',encoding='utf8') as out:
             dev.dtr=False;dev.rts=True;time.sleep(.1);dev.rts=False
             deadline=time.monotonic()+args.seconds;identified=False;confirmed=False;previous=None
             while time.monotonic()<deadline:

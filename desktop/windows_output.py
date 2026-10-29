@@ -9,6 +9,7 @@ import os
 from .config import BITS
 
 KEYS = (0x41, 0x53, 0x4A, 0x4B, 0x4C, 0x26, 0x28, 0x0D, 0x48)
+TILT_KEY = 0x54  # 'T' key for Tilt / Star Power separate from Select ('H')
 
 class WindowsOutput:
     def __init__(self):
@@ -37,6 +38,8 @@ class WindowsOutput:
         self.kernel.CloseHandle.argtypes = (w.HANDLE,)
         self.mask = 0
         self.desired = 0
+        self.tilt = False
+        self.desired_tilt = False
         self.error = None
         self.sent = 0
 
@@ -54,7 +57,7 @@ class WindowsOutput:
         finally:
             self.kernel.CloseHandle(handle)
 
-    def _send(self, mask):
+    def _send(self, mask, tilt=False):
         for bit, key in zip(BITS, KEYS):
             if bool(self.mask & bit) == bool(mask & bit):
                 continue
@@ -64,24 +67,39 @@ class WindowsOutput:
             event.ki = self.KEYBOARD(0, scan, flags, 0, 0)
             if self.user.SendInput(1, ctypes.byref(event), ctypes.sizeof(event)) != 1:
                 self.error = 'Windows recusou uma tecla. Execute jogo e aplicativo sem administrador.'
-                # Retain the previous bit so releases are retried rather than forgotten.
                 continue
             self.mask = (self.mask | bit) if mask & bit else (self.mask & ~bit)
             self.sent += 1
+        if bool(self.tilt) != bool(tilt):
+            scan = self.user.MapVirtualKeyW(TILT_KEY, 0)
+            flags = 0x0008 | (0 if tilt else 0x0002)
+            event = self.INPUT(type=1)
+            event.ki = self.KEYBOARD(0, scan, flags, 0, 0)
+            if self.user.SendInput(1, ctypes.byref(event), ctypes.sizeof(event)) == 1:
+                self.tilt = bool(tilt)
+                self.sent += 1
+            else:
+                self.error = 'Windows recusou uma tecla. Execute jogo e aplicativo sem administrador.'
 
     def frame(self, mask, whammy=0):
         self.desired = mask
         self.tick()
 
+    def set_tilt(self, active):
+        self.desired_tilt = bool(active)
+        self.tick()
+
     def tick(self):
-        self._send(self.desired if self.focused() else 0)
+        is_focused = self.focused()
+        self._send(self.desired if is_focused else 0, self.desired_tilt if is_focused else False)
 
     def release(self):
         self.desired = 0
-        self._send(0)
+        self.desired_tilt = False
+        self._send(0, False)
 
     close = release
 
     def snapshot(self):
-        return dict(ready=True, mask=self.mask, whammy=0, error=self.error, sent=self.sent,
+        return dict(ready=True, mask=self.mask, tilt=self.tilt, whammy=0, error=self.error, sent=self.sent,
                     mode='Teclado · somente Clone Hero em primeiro plano', event_path=None)

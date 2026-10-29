@@ -26,6 +26,7 @@ class Bridge:
         self.factory, self.clock = factory, clock
         self.device = None
         self.whammy = 0
+        self.tilt = False
         self.mask = 0
         self.last_frame = None
         self.next_retry = 0
@@ -41,6 +42,7 @@ class Bridge:
             self.error = None
             self.mask = 0
             self.whammy = 0
+            self.tilt = False
             self.last_frame = None
         except (OSError, ValueError) as exc:
             self.error = str(exc)
@@ -71,6 +73,20 @@ class Bridge:
             self.close()
             self.next_retry = self.clock() + 2
 
+    def set_tilt(self, active):
+        active = bool(active)
+        if self.device is None or active == self.tilt:
+            return
+        try:
+            self.device.write(e.EV_ABS, e.ABS_Y, 32767 if active else 0)
+            self.device.syn()
+            self.tilt = active
+            self.sent += 1
+        except OSError as exc:
+            self.error = str(exc)
+            self.close()
+            self.next_retry = self.clock() + 2
+
     def frame(self, mask, whammy=0):
         if not isinstance(mask, int) or not 0 <= mask <= 511:
             raise ValueError('Invalid input mask')
@@ -85,10 +101,12 @@ class Bridge:
         # Firmware v10 emits a state every 250ms, including while held.
         if self.last_frame is not None and self.clock() - self.last_frame > 1.5:
             self.send(0)
+            self.set_tilt(False)
             self.timed_out = True
 
     def release(self):
         self.send(0)
+        self.set_tilt(False)
         self.last_frame = None
 
     def close(self):
@@ -98,6 +116,8 @@ class Bridge:
                     self.device.write(e.EV_KEY, code, 0)
                 if self.whammy:
                     self.device.write(e.EV_ABS, e.ABS_Z, 0)
+                if self.tilt:
+                    self.device.write(e.EV_ABS, e.ABS_Y, 0)
                 self.device.syn()
             except OSError:
                 pass
@@ -106,12 +126,13 @@ class Bridge:
                 self.device = None
         self.mask = 0
         self.whammy = 0
+        self.tilt = False
         self.last_frame = None
 
     def snapshot(self):
         device = getattr(self.device, 'device', None)
         return dict(ready=self.device is not None, name=NAME, button='BTN_SOUTH',
-                    pressed=self.pressed, strum_pressed=bool(self.mask & 256), mask=self.mask, sent=self.sent, error=self.error,
+                    pressed=self.pressed, strum_pressed=bool(self.mask & 256), mask=self.mask, tilt=self.tilt, sent=self.sent, error=self.error,
                     timed_out=self.timed_out, event_path=getattr(device, 'path', None),
                     firmware_required='CHANNELS v10', whammy=self.whammy, axis='ABS_Z',
                     active_buttons=[name for bit, name in BUTTON_NAMES.items() if self.mask & bit])
