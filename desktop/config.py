@@ -8,11 +8,13 @@ ACTIONS = ('green', 'red', 'yellow', 'blue', 'orange', 'up', 'down', 'start', 's
 LABELS = ('Verde', 'Vermelho', 'Amarelo', 'Azul', 'Laranja', 'Palheta ↑', 'Palheta ↓', 'Start', 'Select / Star Power')
 BITS = (1, 4, 8, 16, 32, 2, 256, 64, 128)
 DEFAULT_PINS = (21, 18, 16, 17, 15, 14, 27, 13, 26)
-GPIO = (12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33)
+GPIO = (4, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33)
 
 def data_dir():
     if sys.platform == 'win32':
         return Path(os.environ.get('APPDATA', Path.home() / 'AppData/Roaming')) / 'GuitarLab'
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library/Application Support/GuitarLab'
     return Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'guitar-lab'
 
 def defaults():
@@ -20,7 +22,8 @@ def defaults():
         # Qt's Documents location (including OneDrive redirection) is used by the GUI.
         game_data = Path.home() / 'Documents/Clone Hero'
     else:
-        game_data = Path.home() / '.clonehero'
+        game_data = (Path.home() / 'Clone Hero' if sys.platform == 'darwin'
+                     else Path.home() / '.clonehero')
     return dict(pins=list(DEFAULT_PINS), port='', whammy=False, whammy_sfx=False,
                 game='', game_data=str(game_data), songs=str(game_data / 'Songs'), auto_connect=True)
 

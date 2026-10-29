@@ -2,7 +2,9 @@
 
 Projeto documentado em `/home/yanxxavier/Documents/SecondBrain/Pessoal/Projetos/GuitarHero`.
 
-## Aplicativo desktop — Linux e Windows
+## Aplicativo desktop — Linux, Windows e macOS
+
+No macOS, o aplicativo usa a serial USB para ler o firmware CONFIG v11 e envia as teclas configuradas somente enquanto Clone Hero está em primeiro plano. Mapeie A/S/J/K/L, ↑/↓, Enter e H dentro do jogo. O macOS pode pedir autorização para Automação e Acessibilidade; whammy analógico não está disponível nessa saída. Para executar do código-fonte, instale `requirements-desktop.txt` e `requirements.txt` em um ambiente virtual. O envio de teclas no macOS ainda precisa de validação física nesta máquina.
 
 **[Baixar versão beta em Releases](https://github.com/yanxxavier/guitar_hero_esp32/releases)** · **[Manual do aplicativo](docs/manual.md)**. Pacotes Linux x64 e Windows x64 incluem Python e dependências; basta extrair a pasta inteira. O repositório privado exige login no GitHub. Manual offline também acompanha os pacotes e fica em **Ajuda → Manual do aplicativo (F1)**.
 
@@ -10,7 +12,25 @@ Guitarra visual com setas, identificação/remapeamento de terminais, testes de 
 
 Na montagem de 23/10, o ESP32 usa CONFIG v11 com GPIO12 liberado e pinagem persistida após identificação física. Whammy desativado por padrão; usuário confirmou som normal após desativar Whammy SFX. Mapeamento do jogador permanece no Clone Hero. Windows usa saída por teclado e ainda não oferece whammy analógico.
 
-## Pinagem atual — 23/10/2026
+Em leitura serial no macOS em 29/10, o firmware informou `PINS 16,21,27,17,18,13,12,4,19` e `TILT 15`. Essa ordem segue Verde/Vermelho/Amarelo/Azul/Laranja/Cima/Baixo/Start/Select, mas ainda não foi confirmada apertando cada controle nesta montagem. `STATE 256` repetido indica que o bit de palhetada para baixo (GPIO12 nesta configuração) está ativo continuamente.
+
+## Pinagem persistida no firmware — leitura de 29/10/2026
+
+O ESP32 informou pela serial a ordem `PINS 16,21,27,17,18,13,12,4,19`, correspondente aos papéis abaixo. Essa é a configuração NVS reportada, ainda não confirmada apertando cada controle nesta montagem. `TILT 15` é um canal separado. `STATE 256` repetido indica palhetada para baixo ativa continuamente em GPIO12.
+
+| Controle | GPIO |
+| --- | ---: |
+| Verde | D16 |
+| Vermelho | D21 |
+| Amarelo | D27 |
+| Azul | D17 |
+| Laranja | D18 |
+| Palheta para cima | D13 |
+| Palheta para baixo | D12 |
+| Start | D4 |
+| Select | D19 |
+
+## Mapa físico identificado em 23/10 (histórico)
 
 | Controle | GPIO |
 | --- | ---: |

@@ -1,5 +1,6 @@
 import configparser
 import datetime
+import json
 import os
 import shutil
 import subprocess
@@ -14,6 +15,9 @@ def running():
         result = external(['tasklist', '/FI', 'IMAGENAME eq clonehero.exe', '/FO', 'CSV', '/NH'],
                                 capture_output=True, text=True, creationflags=0x08000000)
         return 'clonehero.exe' in result.stdout.lower()
+    if sys.platform == 'darwin':
+        result = external(['/usr/bin/pgrep', '-x', 'Clone Hero'], capture_output=True, text=True)
+        return result.returncode == 0
     for p in Path('/proc').glob('[0-9]*/comm'):
         try:
             if p.read_text().strip().lower() == 'clonehero':
@@ -70,6 +74,24 @@ def discover_game():
             if root.is_dir():
                 for p in root.rglob('clonehero.exe'):
                     return str(p)
+    elif sys.platform == 'darwin':
+        manifest = Path.home() / 'Library/Application Support/net.clonehero.launcher/game_installs.json'
+        try:
+            installs = json.loads(manifest.read_text())
+            entries = sorted(installs.get('installs', []), key=lambda entry: entry.get('id') != installs.get('defaultInstallId'))
+            for entry in entries:
+                candidate = Path(entry.get('executablePath', ''))
+                if not entry.get('disabled') and candidate.is_file() and os.access(candidate, os.X_OK):
+                    return str(candidate)
+        except (OSError, ValueError, TypeError):
+            pass
+        roots = [Path('/Applications'), Path.home() / 'Applications',
+                 Path.home() / 'Library/Application Support/Steam/steamapps/common']
+        for root in roots:
+            if root.is_dir():
+                for p in root.rglob('Clone Hero.app/Contents/MacOS/Clone Hero'):
+                    if p.is_file() and os.access(p, os.X_OK):
+                        return str(p)
     else:
         roots = [Path.home() / 'Applications/CloneHero', Path.home() / '.local/share/CloneHero']
         for root in roots:

@@ -1,5 +1,13 @@
 # Estado atual — 23/10/2026
 
+## Portabilidade para macOS — 29/10/2026
+
+Adicionada saída de teclado em `desktop/macos_output.py`, restrita ao Clone Hero em primeiro plano via System Events e CoreGraphics. `desktop.engine` seleciona essa saída no macOS; `desktop.game` reconhece o processo Clone Hero e procura o bundle `.app`; preferências ficam em `~/Library/Application Support/GuitarLab` e os dados padrão do jogo em `~/Clone Hero`. A preparação do Arduino CLI agora seleciona o binário macOS ARM64 ou Intel. README/manual descrevem o fluxo e as permissões necessárias.
+
+Validação desta máquina: macOS 27 Apple Silicon, placa aparece como `/dev/cu.usbserial-110`. A instalação de dependências falhou inicialmente por DNS, mas o usuário depois instalou-as e iniciou o app. Arquivos alterados passaram por `py_compile`. `screen` não abriu por falta de terminal controlador; `cu` não conseguiu criar seu lock em `/var/spool/uucp`. Firmware não foi gravado e nenhum botão foi validado nesta máquina. A saída de teclado ainda requer validação física no Clone Hero e pode exigir autorização macOS de Acessibilidade.
+
+Após instalação manual das dependências pelo usuário, o app iniciou e reconheceu a serial, mas rejeitou GPIO4 na linha `PINS`. Leitura com `monitor_botao.py --reset` confirmou `GUITARHERO CONFIG v11`, `PINS 16,21,27,17,18,13,12,4,19`, `TILT 15`, `STATE 256 0` e `TILT_STATE 1`. A lista PINS é reportada pela NVS do firmware e ainda não foi comparada com apertos físicos. Correção local: permitir GPIO4 e adotar a lista persistida apenas no primeiro perfil do Mac. A telemetria constante STATE256 indica palhetada para baixo ativa; confirmar a ligação física.
+
 Após troca de todas as portas pelo usuário, PINSCAN temporário identificou os GPIOs de nove funções: Verde16, Vermelho18, Amarelo26, Azul33, Laranja14, cima15, baixo12, Start13, Select25. O vermelho noD2 não respondia; o usuário moveu o fio paraD18, onde três pares de transições foram observados. CONFIGv11 atualizado para aceitarD12 foi gravado com hash verificado e persistiu `PINS 16,18,26,33,14,15,12,13,25`; perfil do aplicativo salvo. D12/D15 soltos no boot. Usuário confirmou que o teste visual no Guitar Lab deu certo; partida completa com esta pinagem ainda pendente. A antiga falha mecânica do azul não foi declarada resolvida. Código do scanner em `firmware/identificar_todos`, sem produção de comandos para jogo.
 
 Os registros abaixo são históricos.

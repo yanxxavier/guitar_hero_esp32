@@ -1,4 +1,8 @@
-# Guitar Lab — aplicativo Linux e Windows
+# Guitar Lab — aplicativo Linux, Windows e macOS
+
+## macOS (execução pelo código-fonte)
+
+Crie um ambiente virtual e instale `requirements-desktop.txt` e `requirements.txt`; depois execute `python -m desktop.app`. É necessária conexão à internet para baixar as dependências na primeira instalação. A serial USB aparece no seletor de portas. O macOS usa saída por teclado apenas enquanto Clone Hero está em primeiro plano (A/S/J/K/L, ↑/↓, Enter e H); configure essas teclas no jogo. Autorize Automação e Acessibilidade para o terminal/Python que executa o app, se solicitado. Whammy analógico não está disponível no macOS. A gravação de firmware é suportada pela preparação do Arduino CLI ARM64 ou Intel, mas ainda requer download do core ESP32.
 
 O aplicativo substitui a página de bancada por uma janela local. A aba Guitarra funciona sem internet; Músicas consulta o catálogo público Chorus Encore online.
 
@@ -24,7 +28,7 @@ Clique na seta de uma função na guitarra. **Identificar pelo botão físico** 
 
 Firmware v10 ativo: pode reatribuir as funções entre os nove terminais já lidos:21/18/16/17/15/14/27/13/26. Um GPIO fora desse conjunto exige o firmware opcional CONFIG v11, disponível em Configuração. A gravação é uma ação explícita do usuário; não ocorre ao abrir o app. Não abrir monitor serial paralelo.
 
-CONFIG v11 atualizado aceita GPIO12/13/14/15/16/17/18/19/21/22/23/25/26/27/32/33, nove entradas únicas; debounce5ms, heartbeat250ms, protocolo STATE0–511 e ADC34 mantidos. `CFG PINS p0,...,p8` altera e persiste a pinagem, `PINS p0,...,p8` confirma; o perfil só é salvo após essa confirmação. Ordem: verde/vermelho/amarelo/azul/laranja/cima/baixo/Start/Select. `GET PINS` consulta. GPIO12 e GPIO15 devem estar soltos ao ligar/reiniciar, pois são pinos de boot. Ligações NO entre GPIO e GND, nunca5V nas entradas. Desconecte USB para mudar fios; após ligar, confira o painel antes do jogo.
+CONFIG v11 aceita GPIO4/12/13/14/15/16/17/18/19/21/22/23/25/26/27/32/33, nove entradas únicas; debounce5ms, heartbeat250ms e protocolo STATE0–511. `CFG PINS p0,...,p8` altera e persiste a pinagem, `PINS p0,...,p8` confirma. Num primeiro perfil sem arquivo salvo, o app importa a ordem `PINS` do firmware; perfis existentes são preservados. Ordem: verde/vermelho/amarelo/azul/laranja/cima/baixo/Start/Select. `GET PINS` consulta. GPIO12 e GPIO15 devem estar soltos ao ligar/reiniciar, pois são pinos de boot. Ligações NO entre GPIO e GND, nunca5V nas entradas. Desconecte USB para mudar fios; após ligar, confira o painel antes do jogo.
 
 O botão **Preparar ferramentas de gravação · online** verifica Arduino CLI e o core ESP32. Se faltarem, baixa Arduino CLI1.5.1 oficial para Linux/Windows x86_64, confere SHA256 publicado e instala core2.0.17 numa área do aplicativo, sem substituir core de outro projeto. O botão de gravação também prepara essas ferramentas se necessário. Não grava firmware apenas ao preparar ferramentas. Reutiliza `.tools/bin/arduino-cli` ou PATH quando disponíveis. Placa `esp32:esp32:esp32`. Outras arquiteturas exigem instalação manual. [Arduino CLI](https://docs.arduino.cc/arduino-cli/installation/), [core ESP32](https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html).
 

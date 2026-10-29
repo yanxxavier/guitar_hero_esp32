@@ -173,7 +173,7 @@ class Window(QMainWindow):
             for j,text in enumerate([label,'0','—']):self.table.setItem(i,j,QTableWidgetItem(text))
         right.addWidget(self.table,1)
         self.whammy=QCheckBox('Whammy físico instalado · D34');self.whammy.setChecked(self.profile['whammy']);self.whammy.toggled.connect(self.change_whammy)
-        if sys.platform=='win32':
+        if sys.platform!='linux':
             self.whammy.setEnabled(False)
             self.whammy.setText('Whammy analógico · disponível no Linux')
         right.addWidget(self.whammy);self.analog=QProgressBar();self.analog.setRange(0,4095);right.addWidget(self.analog)
@@ -195,7 +195,8 @@ class Window(QMainWindow):
         help=QLabel('A configuração inicial mantém as demais opções e salva backup antes de ajustar Whammy SFX. Feche o jogo antes de aplicar.\n'
                     'Linux: controle virtual com cinco cores, duas palhetadas, Start/Select e eixo analógico opcional.\n'
                     'Windows: saída por teclado quando Clone Hero está em primeiro plano; mapear A/S/J/K/L, ↑/↓, Enter e H no jogo. '
-                    'Whammy analógico no Windows ainda não está disponível.\n'
+                    'macOS: saída pelas mesmas teclas somente quando Clone Hero está em primeiro plano; o macOS pode solicitar permissão de Automação e Acessibilidade. '
+                    'Whammy analógico no Windows e macOS ainda não está disponível.\n'
                     'No jogo, faça o mapeamento pelo menu de controles. O aplicativo configura a guitarra, não altera silenciosamente o perfil do jogador.')
         help.setWordWrap(True);box.addWidget(help)
         if sys.platform.startswith('linux'):box.addWidget(self.button('Configurar permissões do Linux…',self.permissions))

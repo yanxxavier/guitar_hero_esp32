@@ -37,13 +37,28 @@ def prepare(progress=lambda _:None):
         return 'Firmware v11 e gravador incluídos no aplicativo. Nenhuma gravação foi iniciada.'
     cli=cli_path()
     if not cli:
-        system='Windows' if sys.platform=='win32' else 'Linux'
-        if platform.machine().lower() not in ('x86_64','amd64'):
-            raise ValueError('Instalação automática de ferramentas disponível para Linux/Windows 64 bits x86. Instale Arduino CLI manualmente nesta arquitetura.')
+        machine = platform.machine().lower()
+        if sys.platform == 'win32':
+            system, suffix = 'Windows', 'zip'
+            if machine not in ('x86_64', 'amd64'):
+                raise ValueError('Instale Arduino CLI manualmente nesta arquitetura Windows.')
+        elif sys.platform == 'darwin':
+            system = 'macOS'
+            if machine in ('arm64', 'aarch64'):
+                architecture = 'ARM64'
+            elif machine in ('x86_64', 'amd64'):
+                architecture = '64bit'
+            else:
+                raise ValueError('Instale Arduino CLI manualmente nesta arquitetura macOS.')
+            suffix = 'tar.gz'
+        else:
+            system, suffix = 'Linux', 'tar.gz'
+            if machine not in ('x86_64','amd64'):
+                raise ValueError('Instalação automática de ferramentas disponível para Linux x86_64. Instale Arduino CLI manualmente nesta arquitetura.')
         progress('Baixando Arduino CLI oficial…')
         version='1.5.1'
-        suffix='zip' if system=='Windows' else 'tar.gz'
-        filename=f'arduino-cli_{version}_{system}_64bit.{suffix}'
+        target = f'{system}_{architecture}' if system == 'macOS' else f'{system}_64bit'
+        filename=f'arduino-cli_{version}_{target}.{suffix}'
         release=f'https://github.com/arduino/arduino-cli/releases/download/v{version}/'
         with urllib.request.urlopen(release+f'{version}-checksums.txt',timeout=30) as r:
             checks=r.read().decode()

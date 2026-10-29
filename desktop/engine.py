@@ -18,12 +18,16 @@ def output_factory():
     if sys.platform == 'win32':
         from .windows_output import WindowsOutput
         return WindowsOutput()
+    if sys.platform == 'darwin':
+        from .macos_output import MacOSOutput
+        return MacOSOutput()
     from dashboard.bridge import Bridge
     return Bridge()
 
 class Engine:
     def __init__(self, profile):
         self.profile = copy.deepcopy(profile)
+        self.profile_initialized = (config.data_dir() / 'profile.json').is_file()
         self.lock = threading.RLock()
         self.stop_event = threading.Event()
         self.commands = queue.Queue()
@@ -72,6 +76,7 @@ class Engine:
             with self.lock:
                 self.profile = copy.deepcopy(profile)
                 config.save(self.profile)
+                self.profile_initialized = True
                 self.state['profile_revision'] += 1
 
     def consume(self, line):
@@ -87,10 +92,17 @@ class Engine:
             pins = config.validate_pins([int(s) for s in line[5:].split(',')])
             self.reported = pins
             self.state['reported_pins'] = pins[:]
+            if self.state['configured'] and not self.profile_initialized:
+                self.profile['pins'] = pins[:]
+                config.save(self.profile)
+                self.profile_initialized = True
+                self.state['profile_revision'] += 1
+                self.log('Pinagem inicial carregada da configuração salva no ESP32.')
             if self.pending and pins == self.pending[0]['pins']:
                 self.profile = self.pending[0]
                 self.pending = None
                 config.save(self.profile)
+                self.profile_initialized = True
                 self.state['profile_revision'] += 1
                 self.log('Pinagem gravada e confirmada pelo ESP32.')
             return
@@ -174,6 +186,7 @@ class Engine:
                                         self.output.release()
                                         self.profile = profile
                                         config.save(profile)
+                                        self.profile_initialized = True
                                         self.state['profile_revision'] += 1
                                         self.log('Perfil atualizado.')
                                     else:
